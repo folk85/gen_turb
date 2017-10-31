@@ -11,6 +11,9 @@ program gen_flow_saad
   integer :: nx !< number of elements by X-corrdinate
   integer :: ny !< number of elements by Y-corrdinate
   integer :: nz !< number of elements by Z-corrdinate
+
+  integer :: nmodes !< number of Modes
+
   real(prec) :: dsigma    !< define Deviation of velocities
   real(prec) :: dlength   !< define Integral Length Scale 
   real(prec) :: dtau      !< define Integral Time Scale 
@@ -34,6 +37,8 @@ program gen_flow_saad
   nx = 64
   ny = nx
   nz = nx
+  !set number of Modes
+  nmodes = nx 
 
   !generate arrays 
   dels(1) = dlx
@@ -50,7 +55,7 @@ program gen_flow_saad
 
   write(*,*) "Generate  the flow"
   ! generate fields
-  CALL gen_flow_3d(u, dels, nels)
+  CALL gen_flow_3d(u, dels, nels,nmodes)
 
   write(*,*) "Store the array"
   !store the field
@@ -73,9 +78,10 @@ end program gen_flow_saad
 subroutine gen_flow_3d(vels,dls,nels,nms)
   USE prec_mod
   implicit none
-  integer, dimension(1:3) :: nels   !< number of modes
-  real(prec), dimension(1:3,1:nels(1),1:nels(2),1:nels(3)) :: vels !< in/Out velocities
-  real(prec), dimension(3) :: dls !< Physical boundaries
+  integer, dimension(1:3), intent(IN) :: nels   !< number of modes
+  real(prec), dimension(1:3,1:nels(1),1:nels(2),1:nels(3)), intent(INOUT) :: vels !< in/Out velocities
+  real(prec), dimension(3), intent(IN) :: dls !< Physical boundaries
+  integer, intent(IN) :: nms !< number of modes
   integer :: ix !< number of elements by X-corrdinate
   integer :: iy !< number of elements by Y-corrdinate
   integer :: iz !< number of elements by Z-corrdinate

@@ -3,7 +3,6 @@ F_FILES := $(wildcard src/*.f90)
 OBJ_FILES := $(addprefix obj/,$(notdir $(F_FILES:.f90=.o)))
 
 
-
 all: main.out
 
 main.out: $(OBJ_FILES)
