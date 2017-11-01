@@ -1,10 +1,29 @@
 # The compiler
 F_COMP = gfortran
+F_DB_MOD = True
 # F_COMP = ifort
 # flags for debugging or for maximum performance, comment as necessary
-# FCFLAGS = -g -O0 -fbounds-check -Wall
-FCFLAGS = -g -O0 -traceback
-# FCFLAGS = -O2
+FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended
+FC_INTEL_RL = -O2
+
+FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan
+FC_GNU_RL = -O2
+
+ifeq ($(F_DB_MOD),True)
+	FC_INTEL=$(FC_INTEL_DB)
+	FC_GNU=$(FC_GNU_DB)
+else
+	FC_INTEL=$(FC_INTEL_RL)
+	FC_GNU=$(FC_GNU_RL)
+endif
+ifeq ($(F_COMP),ifort)
+	ifeq()
+	FCFLAGS=$(FC_INTEL)
+else
+	FCFLAGS=$(FC_GNU)
+endif
+
+
 # flags forall (e.g. look for system .mod files, required in gfortran)
 FCFLAGS += -I/usr/include
 
