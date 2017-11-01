@@ -1,0 +1,10 @@
+.gitignore
+.?*
+*.out
+*.o
+obj/
+obj/*
+*.sublime*
+*.mod
+*.dat
+
