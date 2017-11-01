@@ -122,6 +122,7 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   ! real(prec),allocatable :: vtmp2(:,:)     !< temporary vector
   real(prec),allocatable :: dk_i(:,:)     !< wave number vector -direc
   real(prec),allocatable :: dsim_i(:,:)     !< unit direction vector
+  real(prec),allocatable :: dpsi(:)     !< random value in [0,2Pi)
 
 
   integer :: i
@@ -147,6 +148,11 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   if(ALLOCATED(dsim_i)) DEALLOCATE(dsim_i)
   ALLOCATE(dsim_i(1:3,1:nms))
   dsim_i(:,:) = 0.0d0
+
+  ! allocatable random value
+  if(ALLOCATED(dpsi)) DEALLOCATE(dpsi)
+  ALLOCATE(dpsi(1:nms))
+  dpsi(:) = 0.0d0
 
   ix = nels(1)
   iy = nels(2)
@@ -191,7 +197,7 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   ! 8 - Define random unity vectors
   CALL RANDOM_NUMBER(vtmp(1:nms*3))
 
- !generate (unit) direction vector
+ ! 9 - generate (unit) direction vector
   do i= 1, nms
     ! tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
     CALL set_unit_vector_sub(vtmp(1+3*(i-1):3*i),tmp3(1:3))
@@ -199,6 +205,11 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
     CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dsim_i(1:3,i))
   enddo
 
+  ! 10 - Generate random value
+  CALL RANDOM_NUMBER(dpsi(1:nms))
+  dpsi(:) = dpsi(:) * 2.0d0 * f_pi
+
+  ! 11 - Calculate velocities in every point
 
   write(*,*) "Generate Spectrum profile"
   OPEN(UNIT=123,FILE='tests/spectr.dat')
