@@ -26,11 +26,17 @@ program gen_flow_saad
   real(prec), dimension(3)  :: dels         !<
   real(prec), allocatable :: u(:,:,:,:)
 
+  ! write(*,*) "Check cross_product _ initial"
+
+  ! CALL check_cross()
+
+  ! STOP
+
   write(*,*) "Welcome into th program"
   ! set  time duration
   dlt = 0.0d0
   ! set space Length
-  dlx = 2.0d0 * f_pi * 1.0d-2
+  dlx = 2.0d0 * f_pi * 1.0d-1
   dly = dlx
   dlz = dlx
   ! set number of nodes
@@ -39,6 +45,13 @@ program gen_flow_saad
   nz = nx
   !set number of Modes
   nmodes = nx 
+  !set timesteps
+  nt = 1
+
+  !set the Integral values
+  dlength = 7.0d-2
+  dsigma = 1.0d+1
+  dtau = dlength / dsigma
 
   !generate arrays 
   dels(1) = dlx
@@ -55,7 +68,7 @@ program gen_flow_saad
 
   write(*,*) "Generate  the flow"
   ! generate fields
-  CALL gen_flow_3d(u, dels, nels,nmodes)
+  CALL gen_flow_3d(u, dels, nels,nmodes, dsigma,dlength,dtau)
 
   write(*,*) "Store the array"
   !store the field
@@ -75,13 +88,16 @@ program gen_flow_saad
 end program gen_flow_saad
 
 
-subroutine gen_flow_3d(vels,dls,nels,nms)
+subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   USE prec_mod
   implicit none
   integer, dimension(1:3), intent(IN) :: nels   !< number of modes
-  real(prec), dimension(1:3,1:nels(1),1:nels(2),1:nels(3)), intent(INOUT) :: vels !< in/Out velocities
+  real(prec), dimension(1:3,1:nels(1),1:nels(2),1:nels(3)), intent(OUT) :: vels !< in/Out velocities
   real(prec), dimension(3), intent(IN) :: dls !< Physical boundaries
   integer, intent(IN) :: nms !< number of modes
+  real(prec), intent(IN) :: dsigma    !< define Deviation of velocities
+  real(prec), intent(IN) :: dlength   !< define Integral Length Scale 
+  real(prec), intent(IN) :: dtau      !< define Integral Time Scale 
   integer :: ix !< number of elements by X-corrdinate
   integer :: iy !< number of elements by Y-corrdinate
   integer :: iz !< number of elements by Z-corrdinate
@@ -92,12 +108,44 @@ subroutine gen_flow_3d(vels,dls,nels,nms)
   real(prec) :: kmin    !< minimal wave Length
   real(prec) :: kmax    !< maximal wave Length
   real(prec) :: kwid    !< interval between wave modes
+  real(prec),allocatable :: dqm(:)      !< amplitude of 
 
-  integer :: i,j,k
+  real(prec) :: set_eturb     !< external function
+  real(prec) ::set_unit_vector !< external function
+  real(prec) ::cross_product !< external function
+  ! external :: set_eturb
+  ! external :: set_unit_vector
+  ! external :: cross_product
 
+  real(prec),dimension(1:3) :: tmp3     !< temporary vector 3 - elements
+  real(prec),allocatable :: vtmp(:)     !< temporary vector
+  real(prec),allocatable :: vtmp2(:,:)     !< temporary vector
+  real(prec),allocatable :: dk_i(:,:)     !< wave number vector -direc
+  real(prec),allocatable :: dsim_i(:,:)     !< unit direction vector
+
+
+  integer :: i
+  real(prec) :: dtmp, dtmp1
+
+  ! allocatable wave number array
   if(ALLOCATED(dkm)) DEALLOCATE(dkm)
   ALLOCATE(dkm(1:nms))
   dkm(:) = 0.0d0
+
+  ! allocatable amplitude array
+  if(ALLOCATED(dqm)) DEALLOCATE(dqm)
+  ALLOCATE(dqm(1:nms))
+  dqm(:) = 0.0d0
+
+  ! allocatable wave number vector
+  if(ALLOCATED(dk_i)) DEALLOCATE(dk_i)
+  ALLOCATE(dk_i(1:3,1:nms))
+  dk_i(:,:) = 0.0d0
+
+  ! allocatable wave number vector
+  if(ALLOCATED(dsim_i)) DEALLOCATE(dsim_i)
+  ALLOCATE(dsim_i(1:3,1:nms))
+  dsim_i(:,:) = 0.0d0
 
   ix = nels(1)
   iy = nels(2)
@@ -108,7 +156,7 @@ subroutine gen_flow_3d(vels,dls,nels,nms)
   dy = dls(2) / REAL(nels(2),prec)
   dz = dls(3) / REAL(nels(3),prec)
 
-  ! define minimal wave Length
+  ! 2-3 -  define minimal wave Length
   kmin = 0.0d0
   kmax = 0.0d0
   do i=1, 3
@@ -116,24 +164,56 @@ subroutine gen_flow_3d(vels,dls,nels,nms)
     kmax = MAX(kmax,2.0d0*f_pi * nels(i) / dls(i))
   enddo
 
-  ! define inverals and 
+  ! 4 - define inverals and 
   kwid = (kmax - kmin) / nms
   ! set waves for modes
   do i = 1, nms
     dkm(i) = kmin + kwid * (i - 1)
+    !5 - generate amplitudes by equation $q_m = \sqrt{E(k_m)\Delta k}$
+    dqm(i) = SQRT(set_eturb(dkm(i),dlength,dsigma) * kwid)
   enddo
 
+  ! 6 - 7 Calculate wave number vector
+  ! ALLOCATE(vtmp(1:3,1:nms))
+  ALLOCATE(vtmp(1:nms*3))
+  CALL RANDOM_NUMBER(vtmp(:))
+  do i = 1, nms
+    ! generate unit vector in 3D space
+    tmp3(1:3) = vtmp(1+3*(i-1):3*i)
+    write(*,*) i, 1+3*(i-1),set_unit_vector(tmp3)
+    tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
+    dk_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
+    dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
+    dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
+    dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
+  enddo
+
+  ! 8 - Define random unity vectors
+  CALL RANDOM_NUMBER(vtmp(1:nms*3))
+
+ !generate (unit) direction vector
+  do i= 1, nms
+    tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
+    ! dsim_i(1:3,i) = cross_product(tmp3(1:3), dk_i(1:3,i))
+    CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dsim_i(1:3,i))
+  enddo
+
+
+  write(*,*) "Generate Spectrum profile"
+  OPEN(UNIT=123,FILE='tests/spectr.dat')
+  do i= 1, nms
+    ! dtmp = 10. + 10.*(i-1)
+    ! dtmp1 = set_eturb(dtmp,dlength,dsigma)
+    ! write(*,'(2es13.5)')dtmp, dtmp1
+    ! if (dtmp /= dtmp) write(*,*) "Some errors"
+    ! write(*,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
+    write(123,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
+  enddo
+  CLOSE(123)
+  write(*,*) "END: Generate Spectrum profile"
 
   CALL RANDOM_NUMBER(vels(1:3,1:ix,1:iy,1:iz))
 
   RETURN
 end subroutine gen_flow_3d
 
-! !@brief Module with definition of precision
-! module prec_mod
-! implicit none
-
-!   integer, parameter    :: prec = kind(1.0d0)  !< define precision mode
-!   real(prec), parameter :: f_zero 1.0_prec !< Pi in Fire used precision. 
-!   real(prec), parameter :: f_pi 3.141592653589793238462643383279502884197_prec !< Pi in Fire used precision. 
-! end module prec_mod
