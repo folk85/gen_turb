@@ -12,15 +12,14 @@
 !! The angle $\phi \in \textit{N}(-2\pi;2\pi) $, where 
 !! $\textit{N}(a,b)$ is uniform distribution in range $[a,b)$ 
 !------------------------------------------------------------------
-pure function set_unit_vector(dk) result(dv)
+pure subroutine set_unit_vector_sub(dk,dv) 
   USE prec_mod
   implicit none
-  real*8,dimension(*), intent(IN)  :: dk !< initial angles in polar system of coordinatesgeneration of random numbers in [0,1)
-  real*8,dimension(1:3) :: dv !< Return vector 
+  real(prec), dimension(*), intent(IN)  :: dk !< initial angles in polar system of coordinatesgeneration of random numbers in [0,1)
+  real(prec), dimension(1:3),intent(OUT) :: dv !< Return vector 
   real(prec) :: dtheta !< angle [0,Pi]
   real(prec) :: dtau !< temporal number  [-1, 1)
   real(prec) :: dphi !< angle [-Pi,Pi)
-
   
   ! CALL RANDOM_NUMBER(dk)
 
@@ -31,44 +30,8 @@ pure function set_unit_vector(dk) result(dv)
   dv(2) = SIN(dtheta) * SIN(dphi)
   dv(3) = COS(dtheta)
   RETURN
-end function set_unit_vector
+end subroutine set_unit_vector_sub
 
-!----------------------------------------------------------------------
-!@brief Calculate normalized cross product
-!!
-function cross_product(a, b) !result(r)
-  USE prec_mod
-  implicit none
-  real*8, dimension(3)              :: cross_product !< result vector
-  real(prec), dimension(3) , intent(IN) :: a !< first vector
-  real(prec), dimension(3) , intent(IN) :: b !< second vector
-  real(prec), dimension(3)              :: r !< result vector
-  real(prec) :: d !< result vector
-  integer :: i
-
-  write(*,*) "Calc cross product"
-  do i=1, 3
-    write(*,'(i10,2es10.2)') i, a(i), b(i)
-  enddo
-
-  r(1) = a(2) * b(3) - a(3) * b(2)
-  r(2) = a(3) * b(1) - a(1) * b(3)
-  r(3) = a(1) * b(2) - a(2) * b(1)
-
-  write(*,*) "|r|"
-
-  d = 1.0d0 !SQRT(SUM(r(1:3)**2))
-
-  write(*,'(a,3es10.2)') "result",r(1:3)
-
-  write(*,*) "Noramlize"
-
-  do i=1,3
-    cross_product(i)  = r(i) / (d + small)
-  enddo
-  ! cross_product(1:3) = r(1:3) !/ (d + small)
-  RETURN     
-end function cross_product
 
 !----------------------------------------------------------------------
 !@brief Calculate normalized cross product
@@ -78,9 +41,9 @@ pure subroutine cross_product_sub(a, b, cr_p) !result(r)
   implicit none
   real(prec), dimension(3) , intent(IN) :: a !< first vector
   real(prec), dimension(3) , intent(IN) :: b !< second vector
-  real(prec), dimension(3) , intent(OUT) :: cr_p !< second vector
-  real(prec), dimension(3)              :: r !< result vector
-  real(prec) :: d !< result vector
+  real(prec), dimension(3) , intent(OUT) :: cr_p !< result vector
+  real(prec), dimension(3)              :: r !< temporary vector
+  real(prec) :: d !< asb of result vector
 
   r(1) = a(2) * b(3) - a(3) * b(2)
   r(2) = a(3) * b(1) - a(1) * b(3)
@@ -93,13 +56,13 @@ pure subroutine cross_product_sub(a, b, cr_p) !result(r)
   RETURN     
 end subroutine cross_product_sub
 
-
+!@brief Check subroutine cross pruduct 
 subroutine check_cross()
   USE prec_mod
     implicit none
     real(prec),dimension(3) :: i,j,k
     real(prec),dimension(3) :: res
-    real*8 :: cross_product
+    ! real*8 :: cross_product
     integer :: m
 
     i(1:3) = (/ 1. , 0. , 0. /)

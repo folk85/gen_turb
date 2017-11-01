@@ -112,20 +112,21 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
 
   real(prec) :: set_eturb     !< external function
   real(prec) ::set_unit_vector !< external function
-  real(prec) ::cross_product !< external function
+  ! real(prec) ::cross_product !< external function
   ! external :: set_eturb
   ! external :: set_unit_vector
   ! external :: cross_product
 
   real(prec),dimension(1:3) :: tmp3     !< temporary vector 3 - elements
   real(prec),allocatable :: vtmp(:)     !< temporary vector
-  real(prec),allocatable :: vtmp2(:,:)     !< temporary vector
+  ! real(prec),allocatable :: vtmp2(:,:)     !< temporary vector
   real(prec),allocatable :: dk_i(:,:)     !< wave number vector -direc
   real(prec),allocatable :: dsim_i(:,:)     !< unit direction vector
 
 
   integer :: i
-  real(prec) :: dtmp, dtmp1
+  ! real(prec) :: dtmp
+  ! real(prec) :: dtmp1
 
   ! allocatable wave number array
   if(ALLOCATED(dkm)) DEALLOCATE(dkm)
@@ -179,9 +180,8 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   CALL RANDOM_NUMBER(vtmp(:))
   do i = 1, nms
     ! generate unit vector in 3D space
-    tmp3(1:3) = vtmp(1+3*(i-1):3*i)
-    write(*,*) i, 1+3*(i-1),set_unit_vector(tmp3)
-    tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
+    ! tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
+    CALL set_unit_vector_sub(vtmp(1+3*(i-1):3*i),tmp3(1:3))
     dk_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
     dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
     dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
@@ -193,7 +193,8 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
 
  !generate (unit) direction vector
   do i= 1, nms
-    tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
+    ! tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
+    CALL set_unit_vector_sub(vtmp(1+3*(i-1):3*i),tmp3(1:3))
     ! dsim_i(1:3,i) = cross_product(tmp3(1:3), dk_i(1:3,i))
     CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dsim_i(1:3,i))
   enddo
