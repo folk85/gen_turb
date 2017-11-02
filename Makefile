@@ -2,12 +2,21 @@
 F_COMP = gfortran
 F_DB_MOD = True
 # F_COMP = ifort
-# flags for debugging or for maximum performance, comment as necessary
-FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended
-FC_INTEL_RL = -O2
 
-FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan
-FC_GNU_RL = -O2
+# change these to proper directories where each file should be
+SRCDIR   = src
+OBJDIR   = obj
+BINDIR   = bin
+TSTDIR   = tests
+rm       = rm -f
+
+# flags for debugging or for maximum performance, comment as necessary
+FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended -module $(OBJDIR)
+FC_INTEL_RL = -O2 -module $(OBJDIR)
+
+FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -ffpe-trap=zero,overflow,underflow -finit-real=nan -J$(OBJDIR)
+# FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan
+FC_GNU_RL = -O2 -J$(OBJDIR)
 
 ifeq ($(F_DB_MOD),True)
 	FC_INTEL=$(FC_INTEL_DB)
@@ -17,7 +26,6 @@ else
 	FC_GNU=$(FC_GNU_RL)
 endif
 ifeq ($(F_COMP),ifort)
-	ifeq()
 	FCFLAGS=$(FC_INTEL)
 else
 	FCFLAGS=$(FC_GNU)
@@ -28,35 +36,55 @@ endif
 FCFLAGS += -I/usr/include
 
 # libraries needed for linking, unused in the examples
-#LDFLAGS = -li_need_this_lib
+LDFLAGS = 
 
 # List of executables to be built within the package
-PROGRAMS = main 
+TARGET = main 
 
 # Define python script to show spectr
-PL_SPECTR = tests/plot_spectr.py
+PL_SPECTR = $(TSTDIR)/plot_spectr.py
 
-F_FILES := $(wildcard src/*.f90)
-FT_FILES := $(wildcard tests/*.f90)
-OBJ_FILES := $(addprefix obj/,$(notdir $(F_FILES:.f90=.o)))
+F_FILES := $(wildcard $(SRCDIR)/*.f90)
+FT_FILES := $(wildcard $(TSTDIR)/*.f90)
+OBJ_FILES := $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f90=.o)))
+# OBJ_FILES += $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f=.o)))
+MOD_FILES := $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f90=.mod)))
 
 # "make" builds all
-all: $(PROGRAMS)
+# all: $(TARGET)
 
-main: $(OBJ_FILES)
+$(BINDIR)/$(TARGET): $(OBJ_FILES)
+	# @mkdir -p $(BINDIR)
 	$(F_COMP) $(FCFLAGS) -o $@ $^ $(LDFLAGS)
+	@echo "Linking complete!"
 
-obj/%.o: src/%.f90
+$(OBJ_FILES): $(OBJDIR)/%.o : $(SRCDIR)/%.f90
+	# @mkdir -p $(OBJDIR)
 	$(F_COMP) $(FCFLAGS) -c -o $@ $<
 
-# tests/%.o: tests/%.f90
-# 	$(F_COMP) $(FCFLAGS) -c -o $@ $<
+# $(OBJ_FILES): $(OBJDIR)/%.o : $(SRCDIR)/%.f
+	# $(F_COMP) $(FCFLAGS) -c -o $@ $<
 
+print:
+	@echo "F_FILES    $(F_FILES)"
+	@echo "OBJ_FILES  $(OBJ_FILES)"
+	@echo "MOD_FILES  $(MOD_FILES)"
+
+
+.PHONY: clean
 clean:
-	rm -rf $(OBJ_FILES)	$(PROGRAMS)
+	@$(rm) $(OBJ_FILES) *.mod
+	@echo "Cleanup complete!"
+
+.PHONY: remove
+remove: clean
+	@$(rm) $(BINDIR)/$(TARGET)
+	@echo "Executable removed!"
+# clean:
+# 	@rm -rf $(OBJ_FILES)	$(PROGRAMS) *.mod *.MOD *~ 
 
 run:
-	./main
+	$(BINDIR)/$(TARGET)
 
 spectr:
 	python27 $(PL_SPECTR)

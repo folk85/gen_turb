@@ -56,6 +56,7 @@ pure subroutine cross_product_sub(a, b, cr_p) !result(r)
   RETURN     
 end subroutine cross_product_sub
 
+
 !@brief Check subroutine cross pruduct 
 subroutine check_cross()
   USE prec_mod
@@ -65,9 +66,9 @@ subroutine check_cross()
     ! real*8 :: cross_product
     integer :: m
 
-    i(1:3) = (/ 1. , 0. , 0. /)
-    j(1:3) = (/ 0. , 1. , 0. /)
-    k(1:3) = (/ 0. , 0. , 1. /)
+    i(1:3) = (/ 1.d0 , 0.d0 , 0.d0 /)
+    j(1:3) = (/ 0.d0 , 1.d0 , 0.d0 /)
+    k(1:3) = (/ 0.d0 , 0.d0 , 1.d0 /)
     do m=1, 3
       write(*,'(i10,3es10.2)') m, i(m),j(m),k(m)
     enddo
