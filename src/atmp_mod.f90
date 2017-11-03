@@ -12,4 +12,10 @@ module tmp_mod
   real(prec), dimension(:,:), allocatable :: b_m      !< coefficient vector K inside SIN and COS
   real(prec), dimension(:,:), allocatable :: c_m      !< random numbers inside SIN and COS
   real(prec), dimension(:,:), allocatable :: dphi_m   !< caclculated angle for SIN and COS
+
+!-----
+!  Use temporary variables for coordinates and velocities in cells
+  integer :: ncell
+  real(prec), dimension(:,:), allocatable :: xp   !< Cell Cartesian coordinates
+  real(prec), dimension(:,:), allocatable :: u    !< velocities in Cells
 end module tmp_mod

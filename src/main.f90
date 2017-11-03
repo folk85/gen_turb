@@ -19,13 +19,14 @@ program gen_flow_saad
   real(prec) :: dlength   !< define Integral Length Scale 
   real(prec) :: dtau      !< define Integral Time Scale 
 !-----
-  integer :: i
+  integer :: i, i1
   integer :: j
   integer :: k
   integer :: ion                            !< number of unitfor I/O
   integer, dimension(3)  :: nels            !< 
   real(prec), dimension(3)  :: dels         !<
-  real(prec), allocatable :: u(:,:,:,:)
+  real(prec), dimension(3)  :: tmp3         !< temporary
+  ! real(prec), allocatable :: u(:,:,:,:)
 
   ! write(*,*) "Check cross_product _ initial"
 
@@ -47,8 +48,21 @@ program gen_flow_saad
 
   !set number of Modes
   nmodes = 1000
-  CALL tmp_alloc(nmodes)
+  ncell  = nx * ny * nz
+  CALL tmp_alloc()
 
+  !define coordinates
+  do i = 1, nx
+    tmp3(1) = dlx * (2*i-1)*5.d-1/ nx
+    do j = 1, ny
+      tmp3(2) = dly * (2*j-1)*5.d-1/ ny
+      do k = 1, nz
+        tmp3(3) = dlz * (2*k-1)*5.d-1/ nz
+        i1 = (i-1) * ny * nz + nz * (j-1) + k
+        xp(1:3,i1) = tmp3(1:3)
+      enddo
+    enddo
+  enddo
   !set timesteps
   nt = 1
 
@@ -66,25 +80,21 @@ program gen_flow_saad
   nels(2) = ny
   nels(3) = nz
 
-  ! allocate the velocities
-  ALLOCATE(u(1:3,1:nx,1:ny,1:nz))
-  u(:,:,:,:) = 0.0d0
-
-  write(*,*) "Generate  the flow"
+  write(*,*) "Generate  the modes"
   ! generate fields
   CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
+
+
+  write(*,*) "Calculate the velocities"
+  CALL set_vels()
 
   write(*,*) "Store the array"
   !store the field
   ion = 121
   OPEN(ion,file='store.dat')
   write(ion,'(3i5)') nx, ny, nz
-  do i=1, nz
-    do j=1, ny
-      do k=1, nx
-        write(ion,'(3es13.5)') u(1:3,k,j,i)
-      enddo
-    enddo
+  do i=1, ncell
+    write(ion,'(3es13.5)') u(1:3,i)
   enddo
   CLOSE(ion)
   write(*,*) "Exit the program"
@@ -96,21 +106,28 @@ end program gen_flow_saad
 !----------------------------------------------------------------------
 !@brief Allocate modes arrays
 !!
-subroutine tmp_alloc(nels)
+subroutine tmp_alloc()
   USE tmp_mod
   implicit none
-  integer, intent(IN) :: nels  !< number of modes
   
-  ALLOCATE(ac_m(1:3,1:nels))
-  ALLOCATE(as_m(1:3,1:nels))
-  ALLOCATE(b_m(1:3,1:nels))
-  ALLOCATE(c_m(1:3,1:nels))
-  ALLOCATE(dphi_m(1:3,1:nels))
+  ALLOCATE(ac_m(1:3,1:nmodes))
+  ALLOCATE(as_m(1:3,1:nmodes))
+  ALLOCATE(b_m(1:3,1:nmodes))
+  ALLOCATE(c_m(1:3,1:nmodes))
+  ALLOCATE(dphi_m(1:3,1:nmodes))
 
   ac_m(:,:) = 0.0d0
   as_m(:,:) = 0.0d0
   b_m(:,:) = 0.0d0
   c_m(:,:) = 0.0d0
   dphi_m(:,:) = 0.0d0
+
+!-----
+!  Use temporary variables for coordinates and velocities in cells
+  ALLOCATE(xp(1:3,1:ncell))
+  ALLOCATE(u(1:3,1:ncell))
+
+  xp(:,:) = 0.0d0
+  u(:,:) = 0.0d0
   RETURN
 end subroutine tmp_alloc
