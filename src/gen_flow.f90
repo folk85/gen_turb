@@ -1,7 +1,8 @@
-!@breaf  main porgram algorithm 
+!@brief  main porgram algorithm 
 !!
 program gen_flow_saad
   USE prec_mod
+  USE tmp_mod
   implicit none
   real(prec) :: dlt !< Time duration
   real(prec) :: dlx !< Length by X-corrdinate
@@ -43,8 +44,11 @@ program gen_flow_saad
   nx = 64
   ny = nx
   nz = nx
+
   !set number of Modes
-  nmodes = nx 
+  nmodes = 1000
+  CALL tmp_alloc(nmodes)
+
   !set timesteps
   nt = 1
 
@@ -68,7 +72,7 @@ program gen_flow_saad
 
   write(*,*) "Generate  the flow"
   ! generate fields
-  CALL gen_flow_3d(u, dels, nels,nmodes, dsigma,dlength,dtau)
+  CALL gen_flow_3d(dels, nels,nmodes, dsigma,dlength,dtau)
 
   write(*,*) "Store the array"
   !store the field
@@ -86,13 +90,19 @@ program gen_flow_saad
   write(*,*) "Exit the program"
 
 end program gen_flow_saad
+!----------------------------------------------------------------------
 
 
-subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
+
+!----------------------------------------------------------------------
+!@brief Generate coefficients for modes using current geometry, 
+!! mesh resolution and number of required wave-modes
+!!
+subroutine gen_flow_3d(dls,nels,nms, dsigma,dlength,dtau)
   USE prec_mod
+  USE tmp_mod
   implicit none
   integer, dimension(1:3), intent(IN) :: nels   !< number of modes
-  real(prec), dimension(1:3,1:nels(1),1:nels(2),1:nels(3)), intent(OUT) :: vels !< in/Out velocities
   real(prec), dimension(3), intent(IN) :: dls !< Physical boundaries
   integer, intent(IN) :: nms !< number of modes
   real(prec), intent(IN) :: dsigma    !< define Deviation of velocities
@@ -111,7 +121,7 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   real(prec),allocatable :: dqm(:)      !< amplitude of 
 
   real(prec) :: set_eturb     !< external function
-  real(prec) ::set_unit_vector !< external function
+  ! real(prec) ::set_unit_vector !< external function
   ! real(prec) ::cross_product !< external function
   ! external :: set_eturb
   ! external :: set_unit_vector
@@ -125,7 +135,8 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   real(prec),allocatable :: dpsi(:)     !< random value in [0,2Pi)
 
 
-  integer :: i
+  integer :: i  !< temporary index
+  integer :: j  !< temporary index
   ! real(prec) :: dtmp
   ! real(prec) :: dtmp1
 
@@ -168,14 +179,14 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   kmax = 0.0d0
   do i=1, 3
     kmin = MAX(kmin,2.0d0 * f_pi / dls(i))
-    kmax = MAX(kmax,2.0d0*f_pi * nels(i) / dls(i))
+    kmax = MAX(kmax,2.0d0*f_pi * DBLE(nels(i)) / dls(i))
   enddo
 
   ! 4 - define inverals and 
-  kwid = (kmax - kmin) / nms
+  kwid = (kmax - kmin) / DBLE(nms)
   ! set waves for modes
   do i = 1, nms
-    dkm(i) = kmin + kwid * (i - 1)
+    dkm(i) = kmin + kwid * DBLE(i - 1)
     !5 - generate amplitudes by equation $q_m = \sqrt{E(k_m)\Delta k}$
     dqm(i) = SQRT(set_eturb(dkm(i),dlength,dsigma) * kwid)
   enddo
@@ -187,7 +198,9 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
   do i = 1, nms
     ! generate unit vector in 3D space
     ! tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
-    CALL set_unit_vector_sub(vtmp(1+3*(i-1):3*i),tmp3(1:3))
+    j = 3 * i - 2
+    ! CALL set_unit_vector_sub(vtmp(j:j+1),tmp3(1:3))
+    CALL set_unit_vector_sub(vtmp(j:j+2),tmp3(1:3))
     dk_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
     dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
     dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
@@ -222,10 +235,40 @@ subroutine gen_flow_3d(vels,dls,nels,nms, dsigma,dlength,dtau)
     write(123,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
   enddo
   CLOSE(123)
+
+  !fill the coefficients in from tmp_mod
+  do i = 1, 3
+    ac_m(i,:) = dsim_i(i,:) * dqm(:)
+    b_m(i,:)  = dk_i(i,:) * dkm(:)
+    c_m(i,:)  = dpsi(:)
+  enddo
+
   write(*,*) "END: Generate Spectrum profile"
 
-  CALL RANDOM_NUMBER(vels(1:3,1:ix,1:iy,1:iz))
+  ! CALL RANDOM_NUMBER(vels(1:3,1:ix,1:iy,1:iz))
 
   RETURN
 end subroutine gen_flow_3d
 
+
+!----------------------------------------------------------------------
+!@brief Allocate modes arrays
+!!
+subroutine tmp_alloc(nels)
+  USE tmp_mod
+  implicit none
+  integer, intent(IN) :: nels  !< number of modes
+  
+  ALLOCATE(ac_m(1:3,1:nels))
+  ALLOCATE(as_m(1:3,1:nels))
+  ALLOCATE(b_m(1:3,1:nels))
+  ALLOCATE(c_m(1:3,1:nels))
+  ALLOCATE(dphi_m(1:3,1:nels))
+
+  ac_m(:,:) = 0.0d0
+  as_m(:,:) = 0.0d0
+  b_m(:,:) = 0.0d0
+  c_m(:,:) = 0.0d0
+  dphi_m(:,:) = 0.0d0
+  RETURN
+end subroutine tmp_alloc
