@@ -50,20 +50,13 @@ OBJ_FILES := $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f90=.o)))
 # OBJ_FILES += $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f=.o)))
 MOD_FILES := $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f90=.mod)))
 
-# "make" builds all
-# all: $(TARGET)
 
 $(BINDIR)/$(TARGET): $(OBJ_FILES)
-	# @mkdir -p $(BINDIR)
 	$(F_COMP) $(FCFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "Linking complete!"
 
 $(OBJ_FILES): $(OBJDIR)/%.o : $(SRCDIR)/%.f90
-	# @mkdir -p $(OBJDIR)
 	$(F_COMP) $(FCFLAGS) -c -o $@ $<
-
-# $(OBJ_FILES): $(OBJDIR)/%.o : $(SRCDIR)/%.f
-	# $(F_COMP) $(FCFLAGS) -c -o $@ $<
 
 print:
 	@echo "F_FILES    $(F_FILES)"
@@ -80,8 +73,6 @@ clean:
 remove: clean
 	@$(rm) $(BINDIR)/$(TARGET)
 	@echo "Executable removed!"
-# clean:
-# 	@rm -rf $(OBJ_FILES)	$(PROGRAMS) *.mod *.MOD *~ 
 
 run:
 	$(BINDIR)/$(TARGET)

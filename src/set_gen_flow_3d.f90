@@ -1,110 +1,13 @@
-!@brief  main porgram algorithm 
-!!
-program gen_flow_saad
-  USE prec_mod
-  USE tmp_mod
-  implicit none
-  real(prec) :: dlt !< Time duration
-  real(prec) :: dlx !< Length by X-corrdinate
-  real(prec) :: dly !< Length by Y-corrdinate
-  real(prec) :: dlz !< Length by Z-corrdinate
-  integer :: nt !< number of elements by time
-  integer :: nx !< number of elements by X-corrdinate
-  integer :: ny !< number of elements by Y-corrdinate
-  integer :: nz !< number of elements by Z-corrdinate
-
-  integer :: nmodes !< number of Modes
-
-  real(prec) :: dsigma    !< define Deviation of velocities
-  real(prec) :: dlength   !< define Integral Length Scale 
-  real(prec) :: dtau      !< define Integral Time Scale 
-!-----
-  integer :: i
-  integer :: j
-  integer :: k
-  integer :: ion                            !< number of unitfor I/O
-  integer, dimension(3)  :: nels            !< 
-  real(prec), dimension(3)  :: dels         !<
-  real(prec), allocatable :: u(:,:,:,:)
-
-  ! write(*,*) "Check cross_product _ initial"
-
-  ! CALL check_cross()
-
-  ! STOP
-
-  write(*,*) "Welcome into th program"
-  ! set  time duration
-  dlt = 0.0d0
-  ! set space Length
-  dlx = 2.0d0 * f_pi * 1.0d-1
-  dly = dlx
-  dlz = dlx
-  ! set number of nodes
-  nx = 64
-  ny = nx
-  nz = nx
-
-  !set number of Modes
-  nmodes = 1000
-  CALL tmp_alloc(nmodes)
-
-  !set timesteps
-  nt = 1
-
-  !set the Integral values
-  dlength = 7.0d-2
-  dsigma = 1.0d+1
-  dtau = dlength / dsigma
-
-  !generate arrays 
-  dels(1) = dlx
-  dels(2) = dly
-  dels(3) = dlz
-
-  nels(1) = nx
-  nels(2) = ny
-  nels(3) = nz
-
-  ! allocate the velocities
-  ALLOCATE(u(1:3,1:nx,1:ny,1:nz))
-  u(:,:,:,:) = 0.0d0
-
-  write(*,*) "Generate  the flow"
-  ! generate fields
-  CALL gen_flow_3d(dels, nels,nmodes, dsigma,dlength,dtau)
-
-  write(*,*) "Store the array"
-  !store the field
-  ion = 121
-  OPEN(ion,file='store.dat')
-  write(ion,'(3i5)') nx, ny, nz
-  do i=1, nz
-    do j=1, ny
-      do k=1, nx
-        write(ion,'(3es13.5)') u(1:3,k,j,i)
-      enddo
-    enddo
-  enddo
-  CLOSE(ion)
-  write(*,*) "Exit the program"
-
-end program gen_flow_saad
-!----------------------------------------------------------------------
-
-
-
 !----------------------------------------------------------------------
 !@brief Generate coefficients for modes using current geometry, 
 !! mesh resolution and number of required wave-modes
 !!
-subroutine gen_flow_3d(dls,nels,nms, dsigma,dlength,dtau)
+subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   USE prec_mod
   USE tmp_mod
   implicit none
   integer, dimension(1:3), intent(IN) :: nels   !< number of modes
   real(prec), dimension(3), intent(IN) :: dls !< Physical boundaries
-  integer, intent(IN) :: nms !< number of modes
   real(prec), intent(IN) :: dsigma    !< define Deviation of velocities
   real(prec), intent(IN) :: dlength   !< define Integral Length Scale 
   real(prec), intent(IN) :: dtau      !< define Integral Time Scale 
@@ -142,27 +45,27 @@ subroutine gen_flow_3d(dls,nels,nms, dsigma,dlength,dtau)
 
   ! allocatable wave number array
   if(ALLOCATED(dkm)) DEALLOCATE(dkm)
-  ALLOCATE(dkm(1:nms))
+  ALLOCATE(dkm(1:nmodes))
   dkm(:) = 0.0d0
 
   ! allocatable amplitude array
   if(ALLOCATED(dqm)) DEALLOCATE(dqm)
-  ALLOCATE(dqm(1:nms))
+  ALLOCATE(dqm(1:nmodes))
   dqm(:) = 0.0d0
 
   ! allocatable wave number vector
   if(ALLOCATED(dk_i)) DEALLOCATE(dk_i)
-  ALLOCATE(dk_i(1:3,1:nms))
+  ALLOCATE(dk_i(1:3,1:nmodes))
   dk_i(:,:) = 0.0d0
 
   ! allocatable wave number vector
   if(ALLOCATED(dsim_i)) DEALLOCATE(dsim_i)
-  ALLOCATE(dsim_i(1:3,1:nms))
+  ALLOCATE(dsim_i(1:3,1:nmodes))
   dsim_i(:,:) = 0.0d0
 
   ! allocatable random value
   if(ALLOCATED(dpsi)) DEALLOCATE(dpsi)
-  ALLOCATE(dpsi(1:nms))
+  ALLOCATE(dpsi(1:nmodes))
   dpsi(:) = 0.0d0
 
   ix = nels(1)
@@ -183,19 +86,19 @@ subroutine gen_flow_3d(dls,nels,nms, dsigma,dlength,dtau)
   enddo
 
   ! 4 - define inverals and 
-  kwid = (kmax - kmin) / DBLE(nms)
+  kwid = (kmax - kmin) / DBLE(nmodes)
   ! set waves for modes
-  do i = 1, nms
+  do i = 1, nmodes
     dkm(i) = kmin + kwid * DBLE(i - 1)
     !5 - generate amplitudes by equation $q_m = \sqrt{E(k_m)\Delta k}$
     dqm(i) = SQRT(set_eturb(dkm(i),dlength,dsigma) * kwid)
   enddo
 
   ! 6 - 7 Calculate wave number vector
-  ! ALLOCATE(vtmp(1:3,1:nms))
-  ALLOCATE(vtmp(1:nms*3))
+  ! ALLOCATE(vtmp(1:3,1:nmodes))
+  ALLOCATE(vtmp(1:nmodes*3))
   CALL RANDOM_NUMBER(vtmp(:))
-  do i = 1, nms
+  do i = 1, nmodes
     ! generate unit vector in 3D space
     ! tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
     j = 3 * i - 2
@@ -208,10 +111,10 @@ subroutine gen_flow_3d(dls,nels,nms, dsigma,dlength,dtau)
   enddo
 
   ! 8 - Define random unity vectors
-  CALL RANDOM_NUMBER(vtmp(1:nms*3))
+  CALL RANDOM_NUMBER(vtmp(1:nmodes*3))
 
  ! 9 - generate (unit) direction vector
-  do i= 1, nms
+  do i= 1, nmodes
     ! tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
     CALL set_unit_vector_sub(vtmp(1+3*(i-1):3*i),tmp3(1:3))
     ! dsim_i(1:3,i) = cross_product(tmp3(1:3), dk_i(1:3,i))
@@ -219,14 +122,14 @@ subroutine gen_flow_3d(dls,nels,nms, dsigma,dlength,dtau)
   enddo
 
   ! 10 - Generate random value
-  CALL RANDOM_NUMBER(dpsi(1:nms))
+  CALL RANDOM_NUMBER(dpsi(1:nmodes))
   dpsi(:) = dpsi(:) * 2.0d0 * f_pi
 
   ! 11 - Calculate velocities in every point
 
   write(*,*) "Generate Spectrum profile"
   OPEN(UNIT=123,FILE='tests/spectr.dat')
-  do i= 1, nms
+  do i= 1, nmodes
     ! dtmp = 10. + 10.*(i-1)
     ! dtmp1 = set_eturb(dtmp,dlength,dsigma)
     ! write(*,'(2es13.5)')dtmp, dtmp1
@@ -249,26 +152,4 @@ subroutine gen_flow_3d(dls,nels,nms, dsigma,dlength,dtau)
 
   RETURN
 end subroutine gen_flow_3d
-
-
 !----------------------------------------------------------------------
-!@brief Allocate modes arrays
-!!
-subroutine tmp_alloc(nels)
-  USE tmp_mod
-  implicit none
-  integer, intent(IN) :: nels  !< number of modes
-  
-  ALLOCATE(ac_m(1:3,1:nels))
-  ALLOCATE(as_m(1:3,1:nels))
-  ALLOCATE(b_m(1:3,1:nels))
-  ALLOCATE(c_m(1:3,1:nels))
-  ALLOCATE(dphi_m(1:3,1:nels))
-
-  ac_m(:,:) = 0.0d0
-  as_m(:,:) = 0.0d0
-  b_m(:,:) = 0.0d0
-  c_m(:,:) = 0.0d0
-  dphi_m(:,:) = 0.0d0
-  RETURN
-end subroutine tmp_alloc
