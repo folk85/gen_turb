@@ -1,12 +1,15 @@
 # The compiler
 F_COMP = gfortran
-F_DB_MOD = True
+# F_DB_MOD = True
+F_DB_MOD = False
 # F_COMP = ifort
 
 # change these to proper directories where each file should be
 SRCDIR   = src
-OBJDIR   = obj
 BINDIR   = bin
+OBJDIR   = obj
+OBJDIR_DB   = $(BINDIR)/obj-db
+OBJDIR_RL   = $(BINDIR)/obj-rl
 TSTDIR   = tests
 rm       = rm -f
 
@@ -21,9 +24,11 @@ FC_GNU_RL = -O2 -J$(OBJDIR)
 ifeq ($(F_DB_MOD),True)
 	FC_INTEL=$(FC_INTEL_DB)
 	FC_GNU=$(FC_GNU_DB)
+	OBJDIR = $(OBJDIR_DB)
 else
 	FC_INTEL=$(FC_INTEL_RL)
 	FC_GNU=$(FC_GNU_RL)
+	OBJDIR = $(OBJDIR_RL)
 endif
 ifeq ($(F_COMP),ifort)
 	FCFLAGS=$(FC_INTEL)
@@ -55,7 +60,7 @@ $(BINDIR)/$(TARGET): $(OBJ_FILES)
 	$(F_COMP) $(FCFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "Linking complete!"
 
-$(OBJ_FILES): $(OBJDIR)/%.o : $(SRCDIR)/%.f90
+$(OBJ_FILES): $(OBJDIR)/%.o : $(SRCDIR)/%.f90 ${OBJDIR}/.sentinel
 	$(F_COMP) $(FCFLAGS) -c -o $@ $<
 
 print:
@@ -63,6 +68,9 @@ print:
 	@echo "OBJ_FILES  $(OBJ_FILES)"
 	@echo "MOD_FILES  $(MOD_FILES)"
 
+%/.sentinel:
+	$(foreach d,$(subst /, ,$*),mkdir -p $d && cd $d && ):
+	touch $@
 
 .PHONY: clean
 clean:
@@ -78,4 +86,4 @@ run:
 	$(BINDIR)/$(TARGET)
 
 spectr:
-	python27 $(PL_SPECTR)
+	python $(PL_SPECTR)
