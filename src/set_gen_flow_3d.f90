@@ -33,16 +33,24 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   real(prec),dimension(1:3) :: tmp3     !< temporary vector 3 - elements
   real(prec),allocatable :: vtmp(:)     !< temporary vector
   ! real(prec),allocatable :: vtmp2(:,:)     !< temporary vector
+  real(prec),allocatable :: dkun_i(:,:)     !< Unit vectors of wave number
   real(prec),allocatable :: dk_i(:,:)     !< wave number vector -direc
   real(prec),allocatable :: dsim_i(:,:)     !< unit direction vector
   real(prec),allocatable :: dpsi(:)     !< random value in [0,2Pi)
 
+  real :: time 
+  real(prec) :: dtmp 
 
   integer :: i  !< temporary index
   integer :: j  !< temporary index
   ! real(prec) :: dtmp
   ! real(prec) :: dtmp1
 
+  !generate random seed
+  ! CALL CPU_TIME(time)
+  ! CALL RANDOM_SEED(PUT=time)
+  CALL random_seed_user()
+  
   ! allocatable wave number array
   if(ALLOCATED(dkm)) DEALLOCATE(dkm)
   ALLOCATE(dkm(1:nmodes))
@@ -52,6 +60,11 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   if(ALLOCATED(dqm)) DEALLOCATE(dqm)
   ALLOCATE(dqm(1:nmodes))
   dqm(:) = 0.0d0
+
+  ! Allocate unit vectors of wave number
+  if(ALLOCATED(dkun_i)) DEALLOCATE(dkun_i)
+  ALLOCATE(dkun_i(1:3,1:nmodes))
+  dkun_i(:,:) = 0.0d0
 
   ! allocatable wave number vector
   if(ALLOCATED(dk_i)) DEALLOCATE(dk_i)
@@ -85,13 +98,15 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     kmax = MAX(kmax,2.0d0*f_pi * DBLE(nels(i)) / dls(i))
   enddo
 
-  ! 4 - define inverals and 
+  ! 4 - Generate a list of M equidistant modes:
+  !   $$k_m = k_o + \frac{k_{max}-k_o}{M} (m - 1) $$
   kwid = (kmax - kmin) / DBLE(nmodes)
   ! set waves for modes
   do i = 1, nmodes
     dkm(i) = kmin + kwid * DBLE(i - 1)
     !5 - generate amplitudes by equation $q_m = \sqrt{E(k_m)\Delta k}$
-    dqm(i) = SQRT(set_eturb(dkm(i),dlength,dsigma) * kwid)
+    dtmp = set_eturb(dkm(i),dlength,dsigma)
+    dqm(i) = SQRT(dtmp * kwid)
   enddo
 
   ! 6 - 7 Calculate wave number vector
@@ -104,7 +119,7 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     j = 3 * i - 2
     ! CALL set_unit_vector_sub(vtmp(j:j+1),tmp3(1:3))
     CALL set_unit_vector_sub(vtmp(j:j+2),tmp3(1:3))
-    dk_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
+    dkun_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
     dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
     dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
     dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
@@ -142,9 +157,9 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   !fill the coefficients in from tmp_mod
   do i = 1, 3
     ac_m(i,:) = dsim_i(i,:) * dqm(:)
-    b_m(i,:)  = dk_i(i,:) * dkm(:)
-    c_m(i,:)  = dpsi(:)
+    b_m(i,:)  = dkun_i(i,:) * dkm(:)
   enddo
+  c_m(:)  = dpsi(:)
 
   write(*,*) "END: Generate Spectrum profile"
 

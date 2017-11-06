@@ -18,6 +18,8 @@ program gen_flow_saad
   real(prec) :: dsigma    !< define Deviation of velocities
   real(prec) :: dlength   !< define Integral Length Scale 
   real(prec) :: dtau      !< define Integral Time Scale 
+  real(prec) :: std      !< define Integral Time Scale 
+  real(prec) :: dmean      !< define Integral Time Scale 
 !-----
   integer :: i, i1
   integer :: j
@@ -26,6 +28,9 @@ program gen_flow_saad
   integer, dimension(3)  :: nels            !< 
   real(prec), dimension(3)  :: dels         !<
   real(prec), dimension(3)  :: tmp3         !< temporary
+  real(prec), dimension(:,:),allocatable  :: dx_i         !< temporary
+  real(prec), dimension(3)  :: std_i         !<
+  real(prec), dimension(3)  :: dmean_i         !<
   ! real(prec), allocatable :: u(:,:,:,:)
 
   ! write(*,*) "Check cross_product _ initial"
@@ -47,19 +52,24 @@ program gen_flow_saad
   nz = nx
 
   !set number of Modes
-  nmodes = 1000
+  nmodes = 5000
   ncell  = nx * ny * nz
   CALL tmp_alloc()
 
   !define coordinates
+  ALLOCATE(dx_i(1:3,1:nx))
   do i = 1, nx
-    tmp3(1) = dlx * (2*i-1)*5.d-1/ nx
+    dx_i(1,i) = dlx * (2*i-1)*5.d-1/ nx
+    dx_i(2,i) = dly* (2*i-1)*5.d-1/ nx
+    dx_i(3,i) = dlz * (2*i-1)*5.d-1/ nx
+  end do
+  do i = 1, nx
     do j = 1, ny
-      tmp3(2) = dly * (2*j-1)*5.d-1/ ny
       do k = 1, nz
-        tmp3(3) = dlz * (2*k-1)*5.d-1/ nz
         i1 = (i-1) * ny * nz + nz * (j-1) + k
-        xp(1:3,i1) = tmp3(1:3)
+        xp(1,i1) = dx_i(1,i)
+        xp(2,i1) = dx_i(2,j)
+        xp(3,i1) = dx_i(3,k)
       enddo
     enddo
   enddo
@@ -67,7 +77,7 @@ program gen_flow_saad
   nt = 1
 
   !set the Integral values
-  dlength = 7.0d-2
+  dlength = 1.0d-1
   dsigma = 1.0d+1
   dtau = dlength / dsigma
 
@@ -88,11 +98,17 @@ program gen_flow_saad
   write(*,*) "Calculate the velocities"
   CALL set_vels()
 
+  do i=1, 3
+    dmean_i(i) = SUM(u(i,:)) / ncell
+    std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / ncell)
+    write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
+  enddo
+
   write(*,*) "Store the array"
   !store the field
   ion = 121
   OPEN(ion,file='store.dat')
-  write(ion,'(3i5)') nx, ny, nz
+  ! write(ion,'(3i5)') nx, ny, nz
   do i=1, ncell
     write(ion,'(3es13.5)') u(1:3,i)
   enddo
@@ -113,13 +129,13 @@ subroutine tmp_alloc()
   ALLOCATE(ac_m(1:3,1:nmodes))
   ALLOCATE(as_m(1:3,1:nmodes))
   ALLOCATE(b_m(1:3,1:nmodes))
-  ALLOCATE(c_m(1:3,1:nmodes))
+  ALLOCATE(c_m(1:nmodes))
   ALLOCATE(dphi_m(1:3,1:nmodes))
 
   ac_m(:,:) = 0.0d0
   as_m(:,:) = 0.0d0
   b_m(:,:) = 0.0d0
-  c_m(:,:) = 0.0d0
+  c_m(:) = 0.0d0
   dphi_m(:,:) = 0.0d0
 
 !-----
@@ -131,3 +147,23 @@ subroutine tmp_alloc()
   u(:,:) = 0.0d0
   RETURN
 end subroutine tmp_alloc
+
+!@brief set own seed for random generator
+subroutine random_seed_user()
+  IMPLICIT NONE
+  ! ----- variables for portable seed setting -----
+  INTEGER :: i_seed
+  INTEGER, DIMENSION(:), ALLOCATABLE :: a_seed
+  INTEGER, DIMENSION(1:8) :: dt_seed
+  ! ----- end of variables for seed setting -----
+
+  ! ----- Set up random seed portably -----
+  CALL RANDOM_SEED(size=i_seed)
+  ALLOCATE(a_seed(1:i_seed))
+  CALL RANDOM_SEED(get=a_seed)
+  CALL DATE_AND_TIME(values=dt_seed)
+  a_seed(i_seed)=dt_seed(8); a_seed(1)=dt_seed(8)*dt_seed(7)*dt_seed(6)
+  CALL RANDOM_SEED(put=a_seed)
+  DEALLOCATE(a_seed)
+  ! ----- Done setting up random seed -----
+end subroutine random_seed_user
