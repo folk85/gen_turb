@@ -15,7 +15,7 @@ def plot_spectr():
   # x1,y1,z1 = np.genfromtxt('../hita/spectrum_32.dat',unpack=True)
   
   uvel,vvel,wvel = np.genfromtxt('./store.dat',unpack=True)
-  nk = round(np.size(uvel)**(1./3.))
+  nk = int(round(np.size(uvel)**(1./3.)))
   nel = nk
   ufft = fftn(uvel.reshape(nk,nk,nk))
   vfft = fftn(vvel.reshape(nk,nk,nk))
@@ -62,6 +62,9 @@ def plot_spectr():
   plt.grid()
   plt.tight_layout()
   plt.show()
+  del(f)
+  del(ax)
+  plt.clf()
 
   Rij_x=(ufft*np.conj(ufft)) # compute velo. correlation tensor
   Rij_y=(vfft*np.conj(vfft))
@@ -82,9 +85,17 @@ def plot_spectr():
   # R22 = R22(1:size(u_fft)/2+1);
   Lx = 2.0*np.pi*1.0e-1
   r = np.linspace(0,Lx,NFFT)/(Lx/2);
+
+  l11 = np.trapz(np.real(R11[:NFFT//2+1]),dx=r[1]-r[0])
+  l22 = np.trapz(np.real(R22[:NFFT//2+1]),dx=r[1]-r[0])
+  print("Integral Length Scale Longitudal: %g"%(l11))
+  print("Integral Length Scale Tangent: %g"%(l22))
+
   f,ax = plt.subplots(1)
-  ax.plot(r[:NFFT//2+1],R11[:NFFT//2+1],marker='>',mfc='w',label=u'$R_{11}$')
-  ax.plot(r[:NFFT//2+1],R22[:NFFT//2+1],marker='s',markerfacecolor='w',label=u'$R_{22}$')
+  ax.plot(r[:NFFT//2+1],R11[:NFFT//2+1],marker='>',mfc='w',lw=2,label=u'$R_{11}$')
+  ax.plot(r[:NFFT//2+1],R22[:NFFT//2+1],marker='s',markerfacecolor='w',lw=2,label=u'$R_{22}$')
+  ax.plot(r[:NFFT//2],np.exp(-r[:NFFT//2]/l11))
+  ax.plot(r[:NFFT//2],1.e0+(1.0e0-R22[NFFT//2])*(np.exp(-r[:NFFT//2]/(l22-R22[NFFT//2]))-1.0e0))
   plt.legend()
   plt.tight_layout()
   ax.set_xlabel(u'$r$')
