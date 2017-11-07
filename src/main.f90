@@ -31,6 +31,9 @@ program gen_flow_saad
   real(prec), dimension(:,:),allocatable  :: dx_i         !< temporary
   real(prec), dimension(3)  :: std_i         !<
   real(prec), dimension(3)  :: dmean_i         !<
+  real(prec), dimension(:), allocatable  :: dtmp   !< temporary array
+  logical :: ltest = .FALSE.   !< Set test run  .TRUE.
+  real(prec) :: rand_normal !< RNG function
   ! real(prec), allocatable :: u(:,:,:,:)
 
   ! write(*,*) "Check cross_product _ initial"
@@ -38,6 +41,25 @@ program gen_flow_saad
   ! CALL check_cross()
 
   ! STOP
+  if (ltest) then
+    write(*,*) "Generate Random Numbers by Gauss distribution"
+    k = 1000
+    ALLOCATE(dtmp(1:k))
+    do i = 100, 1000, 100
+      CALL rand_normal_sub(i,0.0d0,1.0d0,dtmp(1:i))
+      dmean = SUM(dtmp(1:i)) / DBLE(i)
+      std = SQRT(SUM((dtmp(1:i)-dmean)**2)/ DBLE(i))
+      write(*,"(i13,2es13.5)") i, dmean, std
+    END DO
+    OPEN(UNIT=123,FILE='tests/gauss.dat')
+    do i= 1, k
+      write(123,'(3es13.5)') dtmp(i), rand_normal(0.0d0,1.0d0)
+    enddo
+    CLOSE(123)
+
+    STOP
+
+  endif
 
   write(*,*) "Welcome into th program"
   ! set  time duration
@@ -167,3 +189,51 @@ subroutine random_seed_user()
   DEALLOCATE(a_seed)
   ! ----- Done setting up random seed -----
 end subroutine random_seed_user
+
+
+!
+!@brief Random Sample from normal (Gaussian) distribution
+!
+FUNCTION rand_normal(mean,stdev) RESULT(c)
+  DOUBLE PRECISION, PARAMETER :: PI=3.141592653589793238462
+  DOUBLE PRECISION :: mean,stdev,c,temp(2)
+  IF(stdev <= 0.0d0) THEN
+
+    WRITE(*,*) "Standard Deviation must be +ve"
+  ELSE
+    CALL RANDOM_NUMBER(temp)
+    r = (-2.0d0 * LOG(temp(1)))**0.5
+    theta = 2.0d0*PI*temp(2)
+    c = mean + stdev * r * SIN(theta)
+  END IF
+END FUNCTION
+
+!
+!@brief Random Sample from normal (Gaussian) distribution
+!
+SUBROUTINE rand_normal_sub(nel,mean,stdev,c)
+  USE prec_mod
+  integer, intent(IN) :: nel !< number of elements
+  real(prec), intent(IN) :: mean !< mean Value
+  real(prec), intent(IN) :: stdev !< deviation
+  real(prec), dimension(1:nel),intent(OUT) :: c !< return an array
+  real(prec), dimension(1:nel*2) :: temp
+  IF(stdev <= 0.0d0) THEN
+
+    WRITE(*,*) "Standard Deviation must be +ve"
+  ELSE
+    
+    CALL random_seed_user()
+
+    CALL RANDOM_NUMBER(temp(1:nel*2))
+    
+    do i= 1, nel
+      r = (-2.0d0 * LOG(temp(i+i-1)))**0.5
+      theta = 2.0d0 * f_pi * temp(i+i)
+      c(i) = mean + stdev * r * SIN(theta)
+    enddo
+  END IF
+  RETURN
+END SUBROUTINE rand_normal_sub
+
+

@@ -35,10 +35,11 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   ! real(prec),allocatable :: vtmp2(:,:)     !< temporary vector
   real(prec),allocatable :: dkun_i(:,:)     !< Unit vectors of wave number
   real(prec),allocatable :: dk_i(:,:)     !< wave number vector -direc
-  real(prec),allocatable :: dsim_i(:,:)     !< unit direction vector
+  real(prec),allocatable :: dsim_i(:,:)     !< unit direction vector in COS
+  real(prec),allocatable :: dksi_i(:,:)     !< unit direction vector in SIN
   real(prec),allocatable :: dpsi(:)     !< random value in [0,2Pi)
 
-  real :: time 
+  real(prec) :: dw_freq !< wave-time frequency multiplier
   real(prec) :: dtmp 
 
   integer :: i  !< temporary index
@@ -52,33 +53,31 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   CALL random_seed_user()
   
   ! allocatable wave number array
-  if(ALLOCATED(dkm)) DEALLOCATE(dkm)
-  ALLOCATE(dkm(1:nmodes))
+  if(.NOT.ALLOCATED(dkm)) ALLOCATE(dkm(1:nmodes))
   dkm(:) = 0.0d0
 
   ! allocatable amplitude array
-  if(ALLOCATED(dqm)) DEALLOCATE(dqm)
-  ALLOCATE(dqm(1:nmodes))
+  if(.NOT.ALLOCATED(dqm)) ALLOCATE(dqm(1:nmodes))
   dqm(:) = 0.0d0
 
   ! Allocate unit vectors of wave number
-  if(ALLOCATED(dkun_i)) DEALLOCATE(dkun_i)
-  ALLOCATE(dkun_i(1:3,1:nmodes))
+  if(.NOT.ALLOCATED(dkun_i)) ALLOCATE(dkun_i(1:3,1:nmodes))
   dkun_i(:,:) = 0.0d0
 
   ! allocatable wave number vector
-  if(ALLOCATED(dk_i)) DEALLOCATE(dk_i)
-  ALLOCATE(dk_i(1:3,1:nmodes))
+  if(.NOT.ALLOCATED(dk_i)) ALLOCATE(dk_i(1:3,1:nmodes))
   dk_i(:,:) = 0.0d0
 
-  ! allocatable wave number vector
-  if(ALLOCATED(dsim_i)) DEALLOCATE(dsim_i)
-  ALLOCATE(dsim_i(1:3,1:nmodes))
+  ! allocatable wave number vector in COS
+  if(.NOT.ALLOCATED(dsim_i)) ALLOCATE(dsim_i(1:3,1:nmodes))
   dsim_i(:,:) = 0.0d0
 
+  ! allocatable wave number vector in SIN
+  if(.NOT.ALLOCATED(dksi_i)) ALLOCATE(dksi_i(1:3,1:nmodes))
+  dksi_i(:,:) = 0.0d0
+
   ! allocatable random value
-  if(ALLOCATED(dpsi)) DEALLOCATE(dpsi)
-  ALLOCATE(dpsi(1:nmodes))
+  if(.NOT.ALLOCATED(dpsi)) ALLOCATE(dpsi(1:nmodes))
   dpsi(:) = 0.0d0
 
   ix = nels(1)
@@ -105,14 +104,16 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   do i = 1, nmodes
     dkm(i) = kmin + kwid * DBLE(i - 1)
     !5 - generate amplitudes by equation $q_m = \sqrt{E(k_m)\Delta k}$
-    dtmp = set_eturb(dkm(i),dlength,dsigma)
-    dqm(i) = SQRT(dtmp * kwid)
+    !       Get SQRT below
+    dqm(i) = set_eturb(dkm(i),dlength,dsigma) * kwid
   enddo
 
   ! 6 - 7 Calculate wave number vector
   ! ALLOCATE(vtmp(1:3,1:nmodes))
-  ALLOCATE(vtmp(1:nmodes*3))
+  if(.NOT.ALLOCATED(vtmp)) ALLOCATE(vtmp(1:nmodes*4))
+  
   CALL RANDOM_NUMBER(vtmp(:))
+
   do i = 1, nmodes
     ! generate unit vector in 3D space
     ! tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
@@ -126,19 +127,22 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   enddo
 
   ! 8 - Define random unity vectors
-  CALL RANDOM_NUMBER(vtmp(1:nmodes*3))
+  CALL RANDOM_NUMBER(vtmp(1:nmodes*4))
 
  ! 9 - generate (unit) direction vector
   do i= 1, nmodes
-    ! tmp3(1:3) = set_unit_vector(vtmp(1+3*(i-1):3*i))
-    CALL set_unit_vector_sub(vtmp(1+3*(i-1):3*i),tmp3(1:3))
-    ! dsim_i(1:3,i) = cross_product(tmp3(1:3), dk_i(1:3,i))
+    CALL set_unit_vector_sub(vtmp(4*i-3),tmp3(1:3))
     CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dsim_i(1:3,i))
+
+    ! 9b - set for second unit vector in SIN coefficients
+    CALL set_unit_vector_sub(vtmp(4*i-1),tmp3(1:3))
+    CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dksi_i(1:3,i))
   enddo
 
   ! 10 - Generate random value
   CALL RANDOM_NUMBER(dpsi(1:nmodes))
-  dpsi(:) = dpsi(:) * 2.0d0 * f_pi
+  dw_freq = 1.0d0
+  dpsi(:) = dpsi(:) * 2.0d0 * f_pi * dw_freq
 
   ! 11 - Calculate velocities in every point
 
@@ -156,7 +160,11 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
 
   !fill the coefficients in from tmp_mod
   do i = 1, 3
-    ac_m(i,:) = dsim_i(i,:) * dqm(:)
+    CALL rand_normal_sub(nmodes,0.0d0,1.0d0,vtmp(1:nmodes))
+    ac_m(i,:) = dsim_i(i,:) * SQRT(dqm(:) * vtmp(1:nmodes)**2   &
+      /(1.0d0+vtmp(1:nmodes)**2))* SIGN(1.0d0,vtmp(1:nmodes))
+    as_m(i,:) = dksi_i(i,:) * SQRT(dqm(:)                       &
+      /(1.0d0+vtmp(1:nmodes)**2))* SIGN(1.0d0,vtmp(1:nmodes))
     b_m(i,:)  = dkun_i(i,:) * dkm(:)
   enddo
   c_m(:)  = dpsi(:)
