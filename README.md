@@ -6,6 +6,8 @@ the main idea of algorithm is compiled from two articles:
 - [2] Fully descripted
 The article considers simple model of turbulence generation.
 
+License: The MIT License is used in this project. See the LICENSE file.
+
 
 [1]: Saad, Tony, Derek Cline, Rob Stoll, and James C. Sutherland. “Scalable Tools for Generating Synthetic Isotropic Turbulence with Arbitrary Spectra.” AIAA Journal 55, no. 1 (August 26, 2016): 327–31. https://doi.org/10.2514/1.J055230.
 
