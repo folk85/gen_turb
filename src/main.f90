@@ -69,9 +69,9 @@ program gen_flow_saad
 
   write(*,*) "Welcome into th program"
   ! set  time duration
-  dlt = 1.0d-4
+  dlt = 1.0d-2
   ! set space Length
-  dlx = 2.0d0 * f_pi * 1.0d-1
+  dlx = 1.0d-1
   dly = dlx
   dlz = dlx
   ! set number of nodes
@@ -80,11 +80,11 @@ program gen_flow_saad
   nz = nx
 
   !set number of timesteps
-  nt = 1
+  nt = 64
   ntimes = nt
 
   !set number of Modes
-  nmodes = 5000
+  nmodes = 100
   ncell  = nx * ny * nz
   CALL tmp_alloc()
 
@@ -154,9 +154,10 @@ program gen_flow_saad
     write(*,*) "Calculate the velocities"
     CALL set_vels_time_space()
 
+    write(*,*) "Calcs mean and deviation"
     do i=1, 3
-      dmean_i(i) = SUM(u(i,:)) / ncell
-      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / ncell)
+      dmean_i(i) = SUM(u(i,:)) / ncell / ntimes
+      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / ncell/ ntimes)
       write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
     enddo
   END IF
@@ -223,9 +224,9 @@ subroutine random_seed_user()
   INTEGER, DIMENSION(1:8) :: dt_seed
   ! ----- end of variables for seed setting -----
 
-  write(*,*) "Use the same RANDOM_SEED(1) to reproduce results"
-  ! CALL RANDOM_SEED(1)
-  RETURN
+  ! write(*,*) "Use the same RANDOM_SEED(1) to reproduce results"
+  ! ! CALL RANDOM_SEED(1)
+  ! RETURN
 
   ! ----- Set up random seed portably -----
   CALL RANDOM_SEED(size=i_seed)
@@ -243,8 +244,9 @@ end subroutine random_seed_user
 !@brief Random Sample from normal (Gaussian) distribution
 !
 FUNCTION rand_normal(mean,stdev) RESULT(c)
+  IMPLICIT NONE
   DOUBLE PRECISION, PARAMETER :: PI=3.141592653589793238462
-  DOUBLE PRECISION :: mean,stdev,c,temp(2)
+  DOUBLE PRECISION :: mean,stdev,c,temp(2), r, theta
   IF(stdev <= 0.0d0) THEN
 
     WRITE(*,*) "Standard Deviation must be +ve"
@@ -261,11 +263,15 @@ END FUNCTION
 !
 SUBROUTINE rand_normal_sub(nel,mean,stdev,c)
   USE prec_mod
+  IMPLICIT NONE
+
   integer, intent(IN) :: nel !< number of elements
   real(prec), intent(IN) :: mean !< mean Value
   real(prec), intent(IN) :: stdev !< deviation
   real(prec), dimension(1:nel),intent(OUT) :: c !< return an array
-  real(prec), dimension(1:nel*2) :: temp
+  real(prec), dimension(1:nel*2) :: temp !< temporary
+  real(prec) :: r, theta
+  integer :: i
   IF(stdev <= 0.0d0) THEN
 
     WRITE(*,*) "Standard Deviation must be +ve"

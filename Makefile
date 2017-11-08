@@ -1,8 +1,8 @@
 # The compiler
-F_COMP = gfortran
+# F_COMP = gfortran
 # F_DB_MOD = True
 F_DB_MOD = False
-# F_COMP = ifort
+F_COMP = ifort
 
 # change these to proper directories where each file should be
 SRCDIR   = src
@@ -15,10 +15,10 @@ rm       = rm -f
 
 # flags for debugging or for maximum performance, comment as necessary
 FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended -module $(OBJDIR)
-FC_INTEL_RL = -O2 -module $(OBJDIR)
+FC_INTEL_RL = -O3 -sox -module $(OBJDIR)
 
-FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -ffpe-trap=zero,overflow,underflow -finit-real=nan -J$(OBJDIR)
-# FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan
+# FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -ffpe-trap=zero,overflow,underflow -finit-real=nan -J$(OBJDIR)
+FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan -J$(OBJDIR)
 FC_GNU_RL = -O2 -J$(OBJDIR)
 
 ifeq ($(F_DB_MOD),True)
@@ -55,6 +55,9 @@ OBJ_FILES := $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f90=.o)))
 # OBJ_FILES += $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f=.o)))
 MOD_FILES := $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f90=.mod)))
 
+all: $(BINDIR)/$(TARGET)
+
+build: $(OBJ_FILES)
 
 $(BINDIR)/$(TARGET): $(OBJ_FILES)
 	$(F_COMP) $(FCFLAGS) -o $@ $^ $(LDFLAGS)

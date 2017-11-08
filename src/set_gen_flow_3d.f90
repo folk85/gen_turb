@@ -23,7 +23,7 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   real(prec) :: kwid    !< interval between wave modes
   real(prec),allocatable :: dqm(:)      !< amplitude of 
 
-  real(prec) :: set_eturb     !< external function
+  ! real(prec) :: set_eturb     !< external function
   ! real(prec) ::set_unit_vector !< external function
   ! real(prec) ::cross_product !< external function
   ! external :: set_eturb
@@ -48,7 +48,16 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   integer :: ien  !< Ending index
   ! real(prec) :: dtmp
   ! real(prec) :: dtmp1
-
+  INTERFACE
+    function set_eturb(dk, dl_in, dsigma_in) result(de)
+      USE prec_mod
+      implicit none
+      real(prec), intent(IN) :: dk !< wave number
+      real(prec), intent(IN), optional :: dl_in !< Integral Length Scale (set by default 0.1 m)
+      real(prec), intent(IN), optional :: dsigma_in !< RMS of velocities (set by default 10 m/s)
+      real(prec) :: de !< return value
+   end function set_eturb
+  end INTERFACE
   !generate random seed
   ! CALL CPU_TIME(time)
   ! CALL RANDOM_SEED(PUT=time)
@@ -107,7 +116,7 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     dkm(i) = kmin + kwid * DBLE(i - 1)
     !5 - generate amplitudes by equation $q_m = \sqrt{E(k_m)\Delta k}$
     !       Get SQRT below
-    dqm(i) = set_eturb(dkm(i),dlength,dsigma) * kwid
+    dqm(i) = set_eturb(dkm(i),dl_in=dlength,dsigma_in=dsigma) * kwid
   enddo
 
   ! 6 - 7 Calculate wave number vector
@@ -156,7 +165,7 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     ! write(*,'(2es13.5)')dtmp, dtmp1
     ! if (dtmp /= dtmp) write(*,*) "Some errors"
     ! write(*,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
-    write(123,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
+    write(123,'(3es13.5)') dkm(i),set_eturb(dkm(i),dl_in=dlength,dsigma_in=dsigma), dqm(i)
   enddo
   CLOSE(123)
 
@@ -173,13 +182,13 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     b_m(i,ist:ien)  = dkun_i(i,:) * dkm(:)
   enddo
 
-  WRITE(*,*) "Switch Time coefficiet in `gen_flow_3d` !!!"
+  ! WRITE(*,*) "Switch Time coefficiet in `gen_flow_3d` !!!"
 
   do i= 1, nmodes
     j = i + ist - 1
     c_m(j)  = dpsi(i) * dsigma * dkm(i)
   enddo
-  c_m(:)  = dpsi(:)
+  ! c_m(:)  = dpsi(:)
 
   write(*,*) "END: Generate Spectrum profile"
 
