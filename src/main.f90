@@ -1,5 +1,9 @@
 !@brief  main porgram algorithm 
 !!
+!@todo 
+!!- Make time dependence
+!!- Extend for 2D space 
+!!- Integrate to FIRE via `useini`
 program gen_flow_saad
   USE prec_mod
   USE tmp_mod
@@ -34,6 +38,8 @@ program gen_flow_saad
   real(prec), dimension(:), allocatable  :: dtmp   !< temporary array
   logical :: ltest = .FALSE.   !< Set test run  .TRUE.
   real(prec) :: rand_normal !< RNG function
+!-----
+  integer :: icase = 4                       !< Set the case, which we want to run
   ! real(prec), allocatable :: u(:,:,:,:)
 
   ! write(*,*) "Check cross_product _ initial"
@@ -63,7 +69,7 @@ program gen_flow_saad
 
   write(*,*) "Welcome into th program"
   ! set  time duration
-  dlt = 0.0d0
+  dlt = 1.0d-4
   ! set space Length
   dlx = 2.0d0 * f_pi * 1.0d-1
   dly = dlx
@@ -72,6 +78,10 @@ program gen_flow_saad
   nx = 64
   ny = nx
   nz = nx
+
+  !set number of timesteps
+  nt = 1
+  ntimes = nt
 
   !set number of Modes
   nmodes = 5000
@@ -95,8 +105,13 @@ program gen_flow_saad
       enddo
     enddo
   enddo
-  !set timesteps
-  nt = 1
+
+  !define timesteps
+  do i= 1, ntimes
+    dtime(i) = DBLE(i) * dlt / ntimes
+  enddo
+  ! set starting index for the coefficients in modes
+  in_time = 1
 
   !set the Integral values
   dlength = 1.0d-1
@@ -112,19 +127,39 @@ program gen_flow_saad
   nels(2) = ny
   nels(3) = nz
 
+  
   write(*,*) "Generate  the modes"
-  ! generate fields
-  CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
+  if (icase == 3) THEN
+    ! generate fields
+    CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
 
 
-  write(*,*) "Calculate the velocities"
-  CALL set_vels()
+    write(*,*) "Calculate the velocities"
+    CALL set_vels()
 
-  do i=1, 3
-    dmean_i(i) = SUM(u(i,:)) / ncell
-    std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / ncell)
-    write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
-  enddo
+    do i=1, 3
+      dmean_i(i) = SUM(u(i,:)) / ncell
+      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / ncell)
+      write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
+    enddo
+  ELSE IF (icase == 4) THEN
+    write(*,*) "work in 3D-space + Time"
+
+    do i = 1, ntimes
+      in_time = ntimes * (i-1) + 1
+    ! generate fields
+      CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
+    end do
+
+    write(*,*) "Calculate the velocities"
+    CALL set_vels_time_space()
+
+    do i=1, 3
+      dmean_i(i) = SUM(u(i,:)) / ncell
+      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / ncell)
+      write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
+    enddo
+  END IF
 
   write(*,*) "Store the array"
   !store the field
@@ -147,12 +182,14 @@ end program gen_flow_saad
 subroutine tmp_alloc()
   USE tmp_mod
   implicit none
-  
-  ALLOCATE(ac_m(1:3,1:nmodes))
-  ALLOCATE(as_m(1:3,1:nmodes))
-  ALLOCATE(b_m(1:3,1:nmodes))
-  ALLOCATE(c_m(1:nmodes))
-  ALLOCATE(dphi_m(1:3,1:nmodes))
+  integer :: i
+
+  i = nmodes * ntimes  
+  ALLOCATE(ac_m(1:3,1:i))
+  ALLOCATE(as_m(1:3,1:i))
+  ALLOCATE(b_m(1:3,1:i))
+  ALLOCATE(c_m(1:i))
+  ALLOCATE(dphi_m(1:3,1:i))
 
   ac_m(:,:) = 0.0d0
   as_m(:,:) = 0.0d0
@@ -162,11 +199,18 @@ subroutine tmp_alloc()
 
 !-----
 !  Use temporary variables for coordinates and velocities in cells
+  i = ncell * ntimes
   ALLOCATE(xp(1:3,1:ncell))
-  ALLOCATE(u(1:3,1:ncell))
+  ALLOCATE(u(1:3,1:i))
 
   xp(:,:) = 0.0d0
   u(:,:) = 0.0d0
+
+!-----
+! Allocate timesteps
+  ALLOCATE(dtime(1:ntimes))
+  dtime(:) = 0.0d0
+
   RETURN
 end subroutine tmp_alloc
 
@@ -178,6 +222,10 @@ subroutine random_seed_user()
   INTEGER, DIMENSION(:), ALLOCATABLE :: a_seed
   INTEGER, DIMENSION(1:8) :: dt_seed
   ! ----- end of variables for seed setting -----
+
+  write(*,*) "Use the same RANDOM_SEED(1) to reproduce results"
+  ! CALL RANDOM_SEED(1)
+  RETURN
 
   ! ----- Set up random seed portably -----
   CALL RANDOM_SEED(size=i_seed)

@@ -44,6 +44,8 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
 
   integer :: i  !< temporary index
   integer :: j  !< temporary index
+  integer :: ist  !< Starting index
+  integer :: ien  !< Ending index
   ! real(prec) :: dtmp
   ! real(prec) :: dtmp1
 
@@ -159,13 +161,23 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   CLOSE(123)
 
   !fill the coefficients in from tmp_mod
+  ist = in_time
+  ien = in_time + nmodes - 1
+
   do i = 1, 3
     CALL rand_normal_sub(nmodes,0.0d0,1.0d0,vtmp(1:nmodes))
-    ac_m(i,:) = dsim_i(i,:) * SQRT(dqm(:) * vtmp(1:nmodes)**2   &
-      /(1.0d0+vtmp(1:nmodes)**2))* SIGN(1.0d0,vtmp(1:nmodes))
-    as_m(i,:) = dksi_i(i,:) * SQRT(dqm(:)                       &
-      /(1.0d0+vtmp(1:nmodes)**2))* SIGN(1.0d0,vtmp(1:nmodes))
-    b_m(i,:)  = dkun_i(i,:) * dkm(:)
+    ac_m(i,ist:ien) = dsim_i(i,:) * SQRT(dqm(:) * vtmp(1:nmodes)**2   &
+      /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
+    as_m(i,ist:ien) = dksi_i(i,:) * SQRT(dqm(:)                       &
+      /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
+    b_m(i,ist:ien)  = dkun_i(i,:) * dkm(:)
+  enddo
+
+  WRITE(*,*) "Switch Time coefficiet in `gen_flow_3d` !!!"
+
+  do i= 1, nmodes
+    j = i + ist - 1
+    c_m(j)  = dpsi(i) * dsigma * dkm(i)
   enddo
   c_m(:)  = dpsi(:)
 
