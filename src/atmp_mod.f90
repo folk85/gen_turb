@@ -13,6 +13,7 @@ module tmp_mod
   real(prec), dimension(:,:), allocatable :: b_m      !< coefficient vector K inside SIN and COS
   real(prec), dimension(:), allocatable :: c_m        !< random numbers inside SIN and COS
   real(prec), dimension(:,:), allocatable :: dphi_m   !< caclculated angle for SIN and COS
+  real(prec), dimension(:), allocatable :: cs_m       !< Internal temporary coefficient
 
 !-----
 !  Use temporary variables for coordinates and velocities in cells
@@ -20,5 +21,5 @@ module tmp_mod
   real(prec), dimension(:,:), allocatable :: xp       !< Cell Cartesian coordinates
   real(prec), dimension(:,:), allocatable :: u        !< velocities in Cells
   integer :: in_time                                  !< Current ttimestep. Used in ge_flow
-  real(prec), dimension(:), allocatable :: dtime      !< times in array of timesteps
+  real(prec), dimension(:), allocatable :: dtim       !< times in array of timesteps
 end module tmp_mod

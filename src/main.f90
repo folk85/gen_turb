@@ -91,9 +91,9 @@ program gen_flow_saad
   !define coordinates
   ALLOCATE(dx_i(1:3,1:nx))
   do i = 1, nx
-    dx_i(1,i) = dlx * (2*i-1)*5.d-1/ nx
-    dx_i(2,i) = dly* (2*i-1)*5.d-1/ nx
-    dx_i(3,i) = dlz * (2*i-1)*5.d-1/ nx
+    dx_i(1,i) = dlx * DBLE(2*i-1) * 5.d-1 / DBLE(nx)
+    dx_i(2,i) = dly * DBLE(2*i-1) * 5.d-1 / DBLE(nx)
+    dx_i(3,i) = dlz * DBLE(2*i-1) * 5.d-1 / DBLE(nx)
   end do
   do i = 1, nx
     do j = 1, ny
@@ -108,7 +108,7 @@ program gen_flow_saad
 
   !define timesteps
   do i= 1, ntimes
-    dtime(i) = DBLE(i) * dlt / ntimes
+    dtim(i) = DBLE(i) * dlt / DBLE(ntimes)
   enddo
   ! set starting index for the coefficients in modes
   in_time = 1
@@ -138,8 +138,8 @@ program gen_flow_saad
     CALL set_vels()
 
     do i=1, 3
-      dmean_i(i) = SUM(u(i,:)) / ncell
-      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / ncell)
+      dmean_i(i) = SUM(u(i,:)) / DBLE(ncell)
+      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(ncell))
       write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
     enddo
   ELSE IF (icase == 4) THEN
@@ -156,8 +156,8 @@ program gen_flow_saad
 
     write(*,*) "Calcs mean and deviation"
     do i=1, 3
-      dmean_i(i) = SUM(u(i,:)) / ncell / ntimes
-      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / ncell/ ntimes)
+      dmean_i(i) = SUM(u(i,:)) / DBLE(ncell * ntimes)
+      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(ncell*ntimes))
       write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
     enddo
   END IF
@@ -167,7 +167,7 @@ program gen_flow_saad
   ion = 121
   OPEN(ion,file='store.dat')
   ! write(ion,'(3i5)') nx, ny, nz
-  do i=1, ncell
+  do i=1, ncell * ntimes
     write(ion,'(3es13.5)') u(1:3,i)
   enddo
   CLOSE(ion)
@@ -191,12 +191,14 @@ subroutine tmp_alloc()
   ALLOCATE(b_m(1:3,1:i))
   ALLOCATE(c_m(1:i))
   ALLOCATE(dphi_m(1:3,1:i))
+  ALLOCATE(cs_m(1:i))
 
   ac_m(:,:) = 0.0d0
   as_m(:,:) = 0.0d0
   b_m(:,:) = 0.0d0
   c_m(:) = 0.0d0
   dphi_m(:,:) = 0.0d0
+  cs_m(:) = 0.0d0
 
 !-----
 !  Use temporary variables for coordinates and velocities in cells
@@ -209,8 +211,8 @@ subroutine tmp_alloc()
 
 !-----
 ! Allocate timesteps
-  ALLOCATE(dtime(1:ntimes))
-  dtime(:) = 0.0d0
+  ALLOCATE(dtim(1:ntimes))
+  dtim(:) = 0.0d0
 
   RETURN
 end subroutine tmp_alloc
@@ -245,14 +247,14 @@ end subroutine random_seed_user
 !
 FUNCTION rand_normal(mean,stdev) RESULT(c)
   IMPLICIT NONE
-  DOUBLE PRECISION, PARAMETER :: PI=3.141592653589793238462
+  DOUBLE PRECISION, PARAMETER :: PI=3.141592653589793238462d0
   DOUBLE PRECISION :: mean,stdev,c,temp(2), r, theta
   IF(stdev <= 0.0d0) THEN
 
     WRITE(*,*) "Standard Deviation must be +ve"
   ELSE
     CALL RANDOM_NUMBER(temp)
-    r = (-2.0d0 * LOG(temp(1)))**0.5
+    r = (-2.0d0 * LOG(temp(1)))**5.0d-1
     theta = 2.0d0*PI*temp(2)
     c = mean + stdev * r * SIN(theta)
   END IF
@@ -282,7 +284,7 @@ SUBROUTINE rand_normal_sub(nel,mean,stdev,c)
     CALL RANDOM_NUMBER(temp(1:nel*2))
     
     do i= 1, nel
-      r = (-2.0d0 * LOG(temp(i+i-1)))**0.5
+      r = (-2.0d0 * LOG(temp(i+i-1)))**5.0d-1
       theta = 2.0d0 * f_pi * temp(i+i)
       c(i) = mean + stdev * r * SIN(theta)
     enddo
