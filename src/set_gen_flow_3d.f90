@@ -132,9 +132,10 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     ! CALL set_unit_vector_sub(vtmp(j:j+1),tmp3(1:3))
     CALL set_unit_vector_sub(vtmp(j:j+2),tmp3(1:3))
     dkun_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
-    dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
-    dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
-    dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
+    dk_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
+    ! dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
+    ! dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
+    ! dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
   enddo
 
   ! 8 - Define random unity vectors
@@ -146,8 +147,9 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dsim_i(1:3,i))
 
     ! 9b - set for second unit vector in SIN coefficients
-    CALL set_unit_vector_sub(vtmp(4*i-1),tmp3(1:3))
-    CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dksi_i(1:3,i))
+    ! CALL set_unit_vector_sub(vtmp(4*i-1),tmp3(1:3))
+    ! CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dksi_i(1:3,i))
+    CALL cross_product_sub(dsim_i(1:3,i), dk_i(1:3,i),dksi_i(1:3,i))
   enddo
 
   ! 10 - Generate random value
@@ -175,19 +177,20 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
 
   do i = 1, 3
     CALL rand_normal_sub(nmodes,0.0d0,1.0d0,vtmp(1:nmodes))
-    ac_m(i,ist:ien) = dsim_i(i,:) * SQRT(dqm(:) * vtmp(1:nmodes)**2   &
+    ac_m(i,ist:ien) = dsim_i(i,:) * SQRT(dqm(:) * vtmp(1:nmodes)**2 * 3.0d0  &
       /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
-    as_m(i,ist:ien) = dksi_i(i,:) * SQRT(dqm(:)                       &
+    as_m(i,ist:ien) = dksi_i(i,:) * SQRT(dqm(:) *3.0d0                       &
       /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
     b_m(i,ist:ien)  = dkun_i(i,:) * dkm(:)
   enddo
 
   ! WRITE(*,*) "Switch Time coefficiet in `gen_flow_3d` !!!"
 
-  do i= 1, nmodes
-    j = i + ist - 1
-    c_m(j)  = dpsi(i) * dsigma * dkm(i)
-  enddo
+  ! do i= 1, nmodes
+  !   j = i + ist - 1
+  !   c_m(j)  = dpsi(i) * dsigma * dkm(i)
+  ! enddo
+  c_m(ist:ien) = dpsi(:) * dkm(:) * dsigma /3.0d0/4.0d0
   ! c_m(:)  = dpsi(:)
 
   write(*,*) "END: Generate Spectrum profile"

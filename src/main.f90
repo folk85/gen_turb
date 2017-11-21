@@ -75,12 +75,12 @@ program gen_flow_saad
   dly = dlx
   dlz = dlx
   ! set number of nodes
-  nx = 64
+  nx = 32
   ny = nx
   nz = nx
 
   !set number of timesteps
-  nt = 64
+  nt = 32
   ntimes = nt
 
   !set number of Modes
@@ -114,7 +114,7 @@ program gen_flow_saad
   in_time = 1
 
   !set the Integral values
-  dlength = 1.0d-1
+  dlength = 7.0d-2
   dsigma = 1.0d+1
   dtau = dlength / dsigma
 
@@ -146,7 +146,7 @@ program gen_flow_saad
     write(*,*) "work in 3D-space + Time"
 
     do i = 1, ntimes
-      in_time = ntimes * (i-1) + 1
+      in_time = nmodes * (i-1) + 1
     ! generate fields
       CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
     end do
