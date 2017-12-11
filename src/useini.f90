@@ -56,29 +56,29 @@
 
         if (itst .LT. 2) then
           ! set  time duration
-          dlt = 2.0d-3
+          dlt = 2.0d-5 !2.0d-3
           ! set space Length
-          dlx = 1.0d-2
-          dly = dlx*2.
+          dlx = 3.0d-3 !1.0d-2
+          dly = dlx    !*2.
           dlz = dlx
           ! set number of nodes
-          nx = 50
-          ny = nx*2
+          nx = 30 !50
+          ny = nx !*2
           nz = nx
 
           !set number of timesteps
-          nt = 2000
+          nt = 2  !2000
           ntimes = nt
 
           !set number of Modes
-          nmodes = 100
+          nmodes = 1000 !100
           tcell  = nx * ny * nz
           CALL tmp_alloc()
           
 
           !set the Integral values
-          dlength = 7.0d-3
-          dsigma = 2.0d+0
+          dlength = 1.0d-3 !7.0d-3
+          dsigma = 1.0d0 !2.0d+0
           dtau = dlength / dsigma
 
           !generate arrays 
@@ -87,7 +87,7 @@
           dels(3) = dlz
 
           nels(1) = nx
-          nels(2) = ny*2
+          nels(2) = ny !*2
           nels(3) = nz
 
           write(*,*) "work in 3D-space + Time"
@@ -151,13 +151,13 @@
           dvels(:) = 0.0d0
           CALL set_vels_at_space_time(time+dlt,dxx,dvels)
           ! write(txt1,'(i,s,3es10.2)') iampro,": vels ",dvels(1),dvels(2),dvels(3)
-          write(txt1,'(a,4es13.5)')" return First  ",dxx(1), dvels(1:3)
+          write(txt1,'(a,4es13.5)')" return Third  ",dxx(1), dvels(1:3)
           txt2=''
           ! IF(iampro<2) CALL UCMESS('usedef','F',txt1,txt2)
         
           CALL FIO_UUMESS ('USEINI','I',txt1,txt2)
           ! write(*,*)txt1
-          CALL CFD_STOP()
+          ! CALL CFD_STOP()
         endif
 
         ! Define velocities
@@ -172,7 +172,7 @@
           dstd  = SUM((u(i,nsp(mat):nep(mat))-dmean)**2) !/ DBLE(nep(mat)-nsp(mat)+1)
           CALL DGLSUM(dstd)
           if (mpi_master) THEN
-            dtmp = SQRT((dstd-dmean**2)/dcell)
+            dtmp = SQRT(dstd)/dcell
             write(txt1,'(a,i13,2es13.5)') "Mean and std vel: ",i, dmean/dcell, dtmp
             txt2 = ''
             CALL FIO_UUMESS ('USEINI','I',txt1,txt2)
