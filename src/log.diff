@@ -1,0 +1,421 @@
+diff --git a/src/atmp_mod.f90 b/src/atmp_mod.f90
+index 391451a..8690478 100644
+--- a/src/atmp_mod.f90
++++ b/src/atmp_mod.f90
+@@ -17,9 +17,9 @@ module tmp_mod
+ 
+ !-----
+ !  Use temporary variables for coordinates and velocities in cells
+-  integer :: ncell                                    !< number of cells
+-  real(prec), dimension(:,:), allocatable :: xp       !< Cell Cartesian coordinates
+-  real(prec), dimension(:,:), allocatable :: u        !< velocities in Cells
++  integer :: tcell                                    !< number of cells
++  ! real(prec), dimension(:,:), allocatable :: xp       !< Cell Cartesian coordinates
++  ! real(prec), dimension(:,:), allocatable :: u        !< velocities in Cells
+   integer :: in_time                                  !< Current ttimestep. Used in ge_flow
+   real(prec), dimension(:), allocatable :: dtim       !< times in array of timesteps
+ end module tmp_mod
+\ No newline at end of file
+diff --git a/src/main.f90 b/src/main.f90
+index ab13183..713202c 100644
+--- a/src/main.f90
++++ b/src/main.f90
+@@ -1,6 +1,6 @@
+-!@brief  main porgram algorithm 
++!>@brief  main porgram algorithm 
+ !!
+-!@todo 
++!>@todo 
+ !!- Make time dependence
+ !!- Extend for 2D space 
+ !!- Integrate to FIRE via `useini`
+@@ -22,7 +22,7 @@ program gen_flow_saad
+   real(prec) :: dsigma    !< define Deviation of velocities
+   real(prec) :: dlength   !< define Integral Length Scale 
+   real(prec) :: dtau      !< define Integral Time Scale 
+-  real(prec) :: std      !< define Integral Time Scale 
++  real(prec) :: std       !< @var define Integral Time Scale 
+   real(prec) :: dmean      !< define Integral Time Scale 
+ !-----
+   integer :: i, i1
+@@ -85,7 +85,7 @@ program gen_flow_saad
+ 
+   !set number of Modes
+   nmodes = 100
+-  ncell  = nx * ny * nz
++  tcell  = nx * ny * nz
+   CALL tmp_alloc()
+ 
+   !define coordinates
+@@ -138,8 +138,8 @@ program gen_flow_saad
+     CALL set_vels()
+ 
+     do i=1, 3
+-      dmean_i(i) = SUM(u(i,:)) / DBLE(ncell)
+-      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(ncell))
++      dmean_i(i) = SUM(u(i,:)) / DBLE(tcell)
++      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(tcell))
+       write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
+     enddo
+   ELSE IF (icase == 4) THEN
+@@ -156,8 +156,8 @@ program gen_flow_saad
+ 
+     write(*,*) "Calcs mean and deviation"
+     do i=1, 3
+-      dmean_i(i) = SUM(u(i,:)) / DBLE(ncell * ntimes)
+-      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(ncell*ntimes))
++      dmean_i(i) = SUM(u(i,:)) / DBLE(tcell * ntimes)
++      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(tcell*ntimes))
+       write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
+     enddo
+   END IF
+@@ -167,7 +167,7 @@ program gen_flow_saad
+   ion = 121
+   OPEN(ion,file='store.dat')
+   ! write(ion,'(3i5)') nx, ny, nz
+-  do i=1, ncell * ntimes
++  do i=1, tcell * ntimes
+     write(ion,'(3es13.5)') u(1:3,i)
+   enddo
+   CLOSE(ion)
+@@ -177,119 +177,3 @@ end program gen_flow_saad
+ !----------------------------------------------------------------------
+ 
+ 
+-!----------------------------------------------------------------------
+-!@brief Allocate modes arrays
+-!!
+-subroutine tmp_alloc()
+-  USE tmp_mod
+-  implicit none
+-  integer :: i
+-
+-  i = nmodes * ntimes  
+-  ALLOCATE(ac_m(1:3,1:i))
+-  ALLOCATE(as_m(1:3,1:i))
+-  ALLOCATE(b_m(1:3,1:i))
+-  ALLOCATE(c_m(1:i))
+-  ALLOCATE(dphi_m(1:3,1:i))
+-  ALLOCATE(cs_m(1:i))
+-
+-  ac_m(:,:) = 0.0d0
+-  as_m(:,:) = 0.0d0
+-  b_m(:,:) = 0.0d0
+-  c_m(:) = 0.0d0
+-  dphi_m(:,:) = 0.0d0
+-  cs_m(:) = 0.0d0
+-
+-!-----
+-!  Use temporary variables for coordinates and velocities in cells
+-  i = ncell * ntimes
+-  ALLOCATE(xp(1:3,1:ncell))
+-  ALLOCATE(u(1:3,1:i))
+-
+-  xp(:,:) = 0.0d0
+-  u(:,:) = 0.0d0
+-
+-!-----
+-! Allocate timesteps
+-  ALLOCATE(dtim(1:ntimes))
+-  dtim(:) = 0.0d0
+-
+-  RETURN
+-end subroutine tmp_alloc
+-
+-!@brief set own seed for random generator
+-subroutine random_seed_user()
+-  IMPLICIT NONE
+-  ! ----- variables for portable seed setting -----
+-  INTEGER :: i_seed
+-  INTEGER, DIMENSION(:), ALLOCATABLE :: a_seed
+-  INTEGER, DIMENSION(1:8) :: dt_seed
+-  ! ----- end of variables for seed setting -----
+-
+-  ! write(*,*) "Use the same RANDOM_SEED(1) to reproduce results"
+-  ! ! CALL RANDOM_SEED(1)
+-  ! RETURN
+-
+-  ! ----- Set up random seed portably -----
+-  CALL RANDOM_SEED(size=i_seed)
+-  ALLOCATE(a_seed(1:i_seed))
+-  CALL RANDOM_SEED(get=a_seed)
+-  CALL DATE_AND_TIME(values=dt_seed)
+-  a_seed(i_seed)=dt_seed(8); a_seed(1)=dt_seed(8)*dt_seed(7)*dt_seed(6)
+-  CALL RANDOM_SEED(put=a_seed)
+-  DEALLOCATE(a_seed)
+-  ! ----- Done setting up random seed -----
+-end subroutine random_seed_user
+-
+-
+-!
+-!@brief Random Sample from normal (Gaussian) distribution
+-!
+-FUNCTION rand_normal(mean,stdev) RESULT(c)
+-  IMPLICIT NONE
+-  DOUBLE PRECISION, PARAMETER :: PI=3.141592653589793238462d0
+-  DOUBLE PRECISION :: mean,stdev,c,temp(2), r, theta
+-  IF(stdev <= 0.0d0) THEN
+-
+-    WRITE(*,*) "Standard Deviation must be +ve"
+-  ELSE
+-    CALL RANDOM_NUMBER(temp)
+-    r = (-2.0d0 * LOG(temp(1)))**5.0d-1
+-    theta = 2.0d0*PI*temp(2)
+-    c = mean + stdev * r * SIN(theta)
+-  END IF
+-END FUNCTION
+-
+-!
+-!@brief Random Sample from normal (Gaussian) distribution
+-!
+-SUBROUTINE rand_normal_sub(nel,mean,stdev,c)
+-  USE prec_mod
+-  IMPLICIT NONE
+-
+-  integer, intent(IN) :: nel !< number of elements
+-  real(prec), intent(IN) :: mean !< mean Value
+-  real(prec), intent(IN) :: stdev !< deviation
+-  real(prec), dimension(1:nel),intent(OUT) :: c !< return an array
+-  real(prec), dimension(1:nel*2) :: temp !< temporary
+-  real(prec) :: r, theta
+-  integer :: i
+-  IF(stdev <= 0.0d0) THEN
+-
+-    WRITE(*,*) "Standard Deviation must be +ve"
+-  ELSE
+-    
+-    CALL random_seed_user()
+-
+-    CALL RANDOM_NUMBER(temp(1:nel*2))
+-    
+-    do i= 1, nel
+-      r = (-2.0d0 * LOG(temp(i+i-1)))**5.0d-1
+-      theta = 2.0d0 * f_pi * temp(i+i)
+-      c(i) = mean + stdev * r * SIN(theta)
+-    enddo
+-  END IF
+-  RETURN
+-END SUBROUTINE rand_normal_sub
+-
+-
+diff --git a/src/set_eturb.f90 b/src/set_eturb.f90
+index 76005f7..39badc8 100644
+--- a/src/set_eturb.f90
++++ b/src/set_eturb.f90
+@@ -8,6 +8,7 @@
+ !!
+ function set_eturb(dk, dl_in, dsigma_in) result(de)
+   USE prec_mod
++  USE constants, ONLY: f_zero, f_pi
+   implicit none
+   real(prec), intent(IN) :: dk !< wave number
+   real(prec), intent(IN), optional :: dl_in !< Integral Length Scale (set by default 0.1 m)
+diff --git a/src/set_gen_flow_3d.f90 b/src/set_gen_flow_3d.f90
+index a2cf274..b04dc74 100644
+--- a/src/set_gen_flow_3d.f90
++++ b/src/set_gen_flow_3d.f90
+@@ -4,6 +4,7 @@
+ !!
+ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
+   USE prec_mod
++  USE constants, ONLY: f_zero, f_pi
+   USE tmp_mod
+   implicit none
+   integer, dimension(1:3), intent(IN) :: nels   !< number of modes
+@@ -133,9 +134,9 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
+     CALL set_unit_vector_sub(vtmp(j:j+2),tmp3(1:3))
+     dkun_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
+     dk_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
+-    ! dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
+-    ! dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
+-    ! dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
++    dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
++    dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
++    dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
+   enddo
+ 
+   ! 8 - Define random unity vectors
+@@ -159,17 +160,17 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
+ 
+   ! 11 - Calculate velocities in every point
+ 
+-  write(*,*) "Generate Spectrum profile"
+-  OPEN(UNIT=123,FILE='tests/spectr.dat')
+-  do i= 1, nmodes
+-    ! dtmp = 10. + 10.*(i-1)
+-    ! dtmp1 = set_eturb(dtmp,dlength,dsigma)
+-    ! write(*,'(2es13.5)')dtmp, dtmp1
+-    ! if (dtmp /= dtmp) write(*,*) "Some errors"
+-    ! write(*,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
+-    write(123,'(3es13.5)') dkm(i),set_eturb(dkm(i),dl_in=dlength,dsigma_in=dsigma), dqm(i)
+-  enddo
+-  CLOSE(123)
++  ! write(*,*) "Generate Spectrum profile"
++  ! OPEN(UNIT=123,FILE='tests/spectr.dat')
++  ! do i= 1, nmodes
++  !   ! dtmp = 10. + 10.*(i-1)
++  !   ! dtmp1 = set_eturb(dtmp,dlength,dsigma)
++  !   ! write(*,'(2es13.5)')dtmp, dtmp1
++  !   ! if (dtmp /= dtmp) write(*,*) "Some errors"
++  !   ! write(*,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
++  !   write(123,'(3es13.5)') dkm(i),set_eturb(dkm(i),dl_in=dlength,dsigma_in=dsigma), dqm(i)
++  ! enddo
++  ! CLOSE(123)
+ 
+   !fill the coefficients in from tmp_mod
+   ist = in_time
+diff --git a/src/set_unit_vector.f90 b/src/set_unit_vector.f90
+index e1d9b1d..8274015 100644
+--- a/src/set_unit_vector.f90
++++ b/src/set_unit_vector.f90
+@@ -14,6 +14,7 @@
+ !------------------------------------------------------------------
+ pure subroutine set_unit_vector_sub(dk,dv) 
+   USE prec_mod
++  USE constants, ONLY: f_zero, f_pi
+   implicit none
+   real(prec), dimension(*), intent(IN)  :: dk !< initial angles in polar system of coordinatesgeneration of random numbers in [0,1)
+   real(prec), dimension(1:3),intent(OUT) :: dv !< Return vector 
+@@ -39,6 +40,7 @@ end subroutine set_unit_vector_sub
+ pure subroutine cross_product_sub(a, b, cr_p) !result(r)
+   USE prec_mod
+   implicit none
++  real(prec), parameter :: small = 1.0d-30 !< Small value
+   real(prec), dimension(3) , intent(IN) :: a !< first vector
+   real(prec), dimension(3) , intent(IN) :: b !< second vector
+   real(prec), dimension(3) , intent(OUT) :: cr_p !< result vector
+diff --git a/src/set_vels.f90 b/src/set_vels.f90
+index b726169..2c143a6 100644
+--- a/src/set_vels.f90
++++ b/src/set_vels.f90
+@@ -1,13 +1,14 @@
+-!@brief Calculate velocities in 3D space ()
++!>@brief Calculate velocities in 3D space ()
+ subroutine set_vels()
+   USE prec_mod
++  USE comm1, ONLY: xp, u
+   USE tmp_mod
+   implicit none
+   integer :: i, j, k
+   real(prec) :: summ, dtmp
+ 
+   do j = 1, 3
+-    do i= 1, ncell
++    do i= 1, tcell
+       summ = 0.0d0
+       do k= 1, nmodes
+         dtmp = DOT_PRODUCT(b_m(1:3,k),xp(1:3,i)) + c_m(k)
+@@ -20,9 +21,10 @@ subroutine set_vels()
+ end subroutine set_vels
+ 
+ 
+-!@brief Calculate velocities in 4Dim. space (XYZ+Time)
++!>@brief Calculate velocities in 4Dim. space (XYZ+Time)
+ subroutine set_vels_time_space()
+   USE prec_mod
++  USE comm1, ONLY: xp, u
+   USE tmp_mod
+   implicit none
+   integer :: i, j, k, icell, it, ilog, nkall
+@@ -32,9 +34,9 @@ subroutine set_vels_time_space()
+ 
+   nkall = nmodes * ntimes
+   ilog = 0
+-  do i= 1, ncell * ntimes
+-    icell = MOD(i-1 , ncell) + 1
+-    it = INT((i-1) / ncell) + 1
++  do i= 1, tcell * ntimes
++    icell = MOD(i-1 , tcell) + 1
++    it = INT((i-1) / tcell) + 1
+     if (it /= ilog) THEN
+       write(*,*) " In Cycle time",it, icell
+       ilog = it
+@@ -49,4 +51,86 @@ subroutine set_vels_time_space()
+     enddo
+   enddo
+   RETURN
+-end subroutine set_vels_time_space
+\ No newline at end of file
++end subroutine set_vels_time_space
++
++
++!>@brief Calculate velocities in 4Dim. space (XYZ+Time)
++subroutine set_vels_at_time(dtim_in)
++  
++  USE comm0, ONLY: ncell
++  USE comm1, ONLY: xp, u
++  USE prec_mod
++  USE fire_mpi_var
++  USE tmp_mod
++  
++  implicit none
++  
++  real(prec), intent(in) :: dtim_in !< current time step
++  
++  integer :: i, j, k, icell, it, ilog, nkall, il
++  real(prec) :: summ, dtmp
++
++  ! WRITE(*,*) "Switch Time coefficiet in set_vels_time_space !!!"
++
++  nkall = nmodes * ntimes
++  ilog = 0
++
++  ilog = INT(ncell**(0.66666667))
++  il = INT(ncell**(1.d0/3.0d0))
++  ! cycle over cells
++  do i= 1, ncell !!!!* ntimes
++    icell = MOD(i-1 , tcell) + 1
++    ! it = INT((i-1) / tcell) + 1
++    ! if (it /= ilog) THEN
++    !   write(*,*) " In Cycle time",it, icell
++    !   ilog = it
++    ! END IF
++    k = MOD(icell-1,ilog)
++    if (mpi_master .and. k.eq.0) then
++      write(*,'(2(a,i))') "Gen vels : ",INT(icell/ilog),"/",il
++    endif
++    cs_m(1:nkall) =  b_m(1,1:nkall)*xp(1,icell) + &
++                     b_m(2,1:nkall)*xp(2,icell) + &
++                     b_m(3,1:nkall)*xp(3,icell) + &
++                     c_m(1:nkall) * dtim_in
++    do j= 1, 3
++      u(j,i) = 2.0d0 * SUM( ac_m(j,1:nkall) * COS(cs_m(1:nkall)) &
++        + as_m(j,1:nkall) * SIN(cs_m(1:nkall)) )
++    enddo
++  enddo
++  RETURN
++end subroutine set_vels_at_time
++
++
++!>@brief Calculate velocities in 4Dim. space (XYZ+Time)
++subroutine set_vels_at_space_time(dtim_in,dxx,vels)
++  
++  USE comm0, ONLY: ncell
++  USE comm1, ONLY: xp, u
++  USE prec_mod
++  USE fire_mpi_var
++  USE tmp_mod
++  
++  implicit none
++  
++  real(prec), intent(in) :: dtim_in !< current time step
++  real(prec),dimension(1:3), intent(inout) :: dxx !< current time step
++  real(prec),dimension(1:3), intent(inout) :: vels !< current time step
++  
++  integer :: i, j, k, icell, it, ilog, nkall, il
++  real(prec) :: summ, dtmp
++
++  ! WRITE(*,*) "Switch Time coefficiet in set_vels_time_space !!!"
++
++  nkall = nmodes * ntimes
++
++  cs_m(1:nkall) =  b_m(1,1:nkall)*dxx(1) + &
++                   b_m(2,1:nkall)*dxx(2) + &
++                   b_m(3,1:nkall)*dxx(3) + &
++                   c_m(1:nkall) * dtim_in
++  do j= 1, 3
++    vels(j) = 2.0d0 * SUM( ac_m(j,1:nkall) * COS(cs_m(1:nkall)) &
++      + as_m(j,1:nkall) * SIN(cs_m(1:nkall)) )
++  enddo
++  RETURN
++end subroutine set_vels_at_space_time
