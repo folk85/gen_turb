@@ -4,6 +4,7 @@
 !!
 subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   USE prec_mod
+  USE constants, ONLY: f_zero, f_pi
   USE tmp_mod
   implicit none
   integer, dimension(1:3), intent(IN) :: nels   !< number of modes
@@ -133,9 +134,9 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     CALL set_unit_vector_sub(vtmp(j:j+2),tmp3(1:3))
     dkun_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
     dk_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
-    ! dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
-    ! dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
-    ! dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
+    dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
+    dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
+    dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
   enddo
 
   ! 8 - Define random unity vectors
@@ -159,17 +160,17 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
 
   ! 11 - Calculate velocities in every point
 
-  write(*,*) "Generate Spectrum profile"
-  OPEN(UNIT=123,FILE='tests/spectr.dat')
-  do i= 1, nmodes
-    ! dtmp = 10. + 10.*(i-1)
-    ! dtmp1 = set_eturb(dtmp,dlength,dsigma)
-    ! write(*,'(2es13.5)')dtmp, dtmp1
-    ! if (dtmp /= dtmp) write(*,*) "Some errors"
-    ! write(*,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
-    write(123,'(3es13.5)') dkm(i),set_eturb(dkm(i),dl_in=dlength,dsigma_in=dsigma), dqm(i)
-  enddo
-  CLOSE(123)
+  ! write(*,*) "Generate Spectrum profile"
+  ! OPEN(UNIT=123,FILE='tests/spectr.dat')
+  ! do i= 1, nmodes
+  !   ! dtmp = 10. + 10.*(i-1)
+  !   ! dtmp1 = set_eturb(dtmp,dlength,dsigma)
+  !   ! write(*,'(2es13.5)')dtmp, dtmp1
+  !   ! if (dtmp /= dtmp) write(*,*) "Some errors"
+  !   ! write(*,'(3es13.5)') dkm(i),set_eturb(dkm(i),dlength,dsigma), dqm(i)
+  !   write(123,'(3es13.5)') dkm(i),set_eturb(dkm(i),dl_in=dlength,dsigma_in=dsigma), dqm(i)
+  ! enddo
+  ! CLOSE(123)
 
   !fill the coefficients in from tmp_mod
   ist = in_time

@@ -14,6 +14,7 @@
 !------------------------------------------------------------------
 pure subroutine set_unit_vector_sub(dk,dv) 
   USE prec_mod
+  USE constants, ONLY: f_zero, f_pi
   implicit none
   real(prec), dimension(*), intent(IN)  :: dk !< initial angles in polar system of coordinatesgeneration of random numbers in [0,1)
   real(prec), dimension(1:3),intent(OUT) :: dv !< Return vector 
@@ -39,6 +40,7 @@ end subroutine set_unit_vector_sub
 pure subroutine cross_product_sub(a, b, cr_p) !result(r)
   USE prec_mod
   implicit none
+  real(prec), parameter :: small = 1.0d-30 !< Small value
   real(prec), dimension(3) , intent(IN) :: a !< first vector
   real(prec), dimension(3) , intent(IN) :: b !< second vector
   real(prec), dimension(3) , intent(OUT) :: cr_p !< result vector

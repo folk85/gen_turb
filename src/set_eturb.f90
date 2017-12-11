@@ -8,6 +8,7 @@
 !!
 function set_eturb(dk, dl_in, dsigma_in) result(de)
   USE prec_mod
+  USE constants, ONLY: f_zero, f_pi
   implicit none
   real(prec), intent(IN) :: dk !< wave number
   real(prec), intent(IN), optional :: dl_in !< Integral Length Scale (set by default 0.1 m)

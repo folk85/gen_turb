@@ -17,9 +17,9 @@ module tmp_mod
 
 !-----
 !  Use temporary variables for coordinates and velocities in cells
-  integer :: ncell                                    !< number of cells
-  real(prec), dimension(:,:), allocatable :: xp       !< Cell Cartesian coordinates
-  real(prec), dimension(:,:), allocatable :: u        !< velocities in Cells
+  integer :: tcell                                    !< number of cells
+  ! real(prec), dimension(:,:), allocatable :: xp       !< Cell Cartesian coordinates
+  ! real(prec), dimension(:,:), allocatable :: u        !< velocities in Cells
   integer :: in_time                                  !< Current ttimestep. Used in ge_flow
   real(prec), dimension(:), allocatable :: dtim       !< times in array of timesteps
 end module tmp_mod
