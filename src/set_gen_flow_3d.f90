@@ -145,6 +145,15 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
  ! 9 - generate (unit) direction vector
   do i= 1, nmodes
     CALL set_unit_vector_sub(vtmp(4*i-3),tmp3(1:3))
+    !-----------------------------
+    ! Set addtitional conditions for Periodic BND
+    !-----------------------------
+    ! tmp3(1) = SIN(5.0d-1 * (dls(1) - dx) * dkm(i) * dkun_i(1,i))
+    ! tmp3(2) = SIN(5.0d-1 * (dls(2) - dy) * dkm(i) * dkun_i(2,i))
+    ! tmp3(3) = SIN(5.0d-1 * (dls(3) - dz) * dkm(i) * dkun_i(3,i))
+    ! tmp3(2) = SIGN(1.0d0,vtmp(4*i-2)-5.0d-1) * SQRT(ABS(1.0d0-tmp3(1)**2-tmp3(3)**2))
+    !!!!!!!
+    !
     CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dsim_i(1:3,i))
 
     ! 9b - set for second unit vector in SIN coefficients

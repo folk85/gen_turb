@@ -92,12 +92,12 @@ c=======================================================================
         do j = 1, nface
           ip1 = lf(1,j)
           ip2 = lf(2,j)
-          dconv(ip1) = dconv(ip1) + F(j)
-          dconv(ip2) = dconv(ip2) - F(j)
+          dconv(ip1) = dconv(ip1) - F(j)
+C           dconv(ip2) = dconv(ip2) + F(j)
         enddo
         do j= 1, nbfac
           ip1 = lb(j)
-          dconv(ip1) = dconv(ip1) - FB(j)
+          dconv(ip1) = dconv(ip1) + FB(j)
         enddo
 
 !       loop over all cells in the current domain (material)
