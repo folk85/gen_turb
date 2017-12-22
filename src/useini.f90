@@ -55,30 +55,35 @@
       IF(I_USEINI == 1) THEN
 
         if (itst .LT. 2) then
+          CALL CFD_PROFILE('PUSH','INIT_TURB')
+
+          call mkl_set_num_threads(1)
+          CALL FIO_UUMESS ('USEINI','I','Set number of OMP to 1','')
+
           ! set  time duration
-          dlt = 2.0d-5 !2.0d-3
+          dlt = 3.0d-3
           ! set space Length
-          dlx = 3.0d-3 !1.0d-2
-          dly = dlx    !*2.
+          dlx = 1.0d-2
+          dly = dlx*2.
           dlz = dlx
           ! set number of nodes
-          nx = 30 !50
-          ny = nx !*2
+          nx = 50
+          ny = nx*2
           nz = nx
 
           !set number of timesteps
-          nt = 2  !2000
+          nt = 3000
           ntimes = nt
 
           !set number of Modes
-          nmodes = 1000 !100
+          nmodes = 300
           tcell  = nx * ny * nz
           CALL tmp_alloc()
           
 
           !set the Integral values
-          dlength = 1.0d-3 !7.0d-3
-          dsigma = 1.0d0 !2.0d+0
+          dlength = 7.0d-3
+          dsigma = 1.0d0*1.2d0 !2.0d+0
           dtau = dlength / dsigma
 
           !generate arrays 
@@ -87,7 +92,7 @@
           dels(3) = dlz
 
           nels(1) = nx
-          nels(2) = ny !*2
+          nels(2) = ny 
           nels(3) = nz
 
           write(*,*) "work in 3D-space + Time"
@@ -158,10 +163,23 @@
           CALL FIO_UUMESS ('USEINI','I',txt1,txt2)
           ! write(*,*)txt1
           ! CALL CFD_STOP()
+          CALL CFD_PROFILE('POP','INIT_TURB')
         endif
 
         ! Define velocities
-        CALL set_vels_at_time(time)
+        CALL CFD_PROFILE('PUSH','GEN_VELS')
+
+        ! CALL set_vels_at_time(time)
+
+        do i=nsp(mat), nep(mat)
+          CALL set_vels_at_space_time(time,xp(1:3,i),u(1:3,i))
+        enddo
+        CALL exchng(u,3,1)
+        CALL exchng(u,3,2)
+        CALL exchng(u,3,3)
+        ! call exchng3(u,3,3)
+
+        CALL CFD_PROFILE('POP','GEN_VELS')
 
         ! write(*,*) "Calcs mean and deviation"
         do i=1, 3

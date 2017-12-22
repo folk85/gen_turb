@@ -93,11 +93,11 @@ c=======================================================================
           ip1 = lf(1,j)
           ip2 = lf(2,j)
           dconv(ip1) = dconv(ip1) - F(j)
-C           dconv(ip2) = dconv(ip2) + F(j)
+          dconv(ip2) = dconv(ip2) + F(j)
         enddo
         do j= 1, nbfac
           ip1 = lb(j)
-          dconv(ip1) = dconv(ip1) + FB(j)
+          dconv(ip1) = dconv(ip1) - FB(j)
         enddo
 
 !       loop over all cells in the current domain (material)
@@ -127,6 +127,36 @@ C           dconv(ip2) = dconv(ip2) + F(j)
 !
 !       deallocate plot arrays
         DEALLOCATE (dconv)
+
+        floatcell(:) = zero
+        floatbd(:) = zero
+!
+!       loop over all cells in the current domain (material)
+        DO ip = nsp(mat), nep(mat)
+!
+!         store specific heat capacity on plot array
+          floatcell(ip) = xp(2,ip)
+!
+        END DO
+!
+!       loop over all boundary regions
+        DO ir = 0, nreg
+!
+!         check for boundary region in current domain (material)
+          IF (ibc(2,ir) /= mat) CYCLE
+!
+!         loop over boundary faces of the current region
+          DO ib = nsr(ir), ner(ir)
+            floatbd(ib) = xb(2,ib)
+          END DO
+!
+        END DO
+!
+!       write 3D result file
+        CALL Write_User_Fl3 (mat,mph1,ifile,'Position.Y',
+     &       'm',ncell,nbfac,floatcell,floatbd)
+!
+!       deallocate plot arrays
         DEALLOCATE (floatcell)
         DEALLOCATE (floatbd)
 
