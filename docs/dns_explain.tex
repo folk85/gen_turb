@@ -1,0 +1,125 @@
+\documentclass[12pt,a4paper]{article}
+	\usepackage[T1]{fontenc}
+	\usepackage{enumerate} % Needed for markdown enumerations to work
+	\usepackage{geometry} % Used to adjust the document margins
+	\usepackage{amsmath} % Equations
+	\usepackage{amssymb} % Equations
+	\usepackage{textcomp} % defines textquotesingle
+    \usepackage[utf8x]{inputenc} % Allow utf-8 characters in the tex document
+	\usepackage[T2A]{fontenc}
+	\usepackage[english, russian]{babel}
+%	\usepackage{mathtools}
+
+
+\title{Прямое численное моделирование распространения пламени}
+
+\begin{document}
+
+\maketitle
+
+\section{Постановка задачи прямого моделирования в программном пакете AST FIRE}
+ 
+ Задача определена в условиях постоянства давления и постоянства плотности. Турбулентность в скорости определена мгнновенными реализациями случайных распределений скоростей при средней скорости $\bar{u}$ и девиацией $u'$. Здесь получается, что уравние неразрысности и уравнения сохранения момента движения не решаются.
+ 
+ Составим систему уравнений в общем виде:
+\begin{itemize}
+     \item уравнение неразрывности
+        \begin{equation}\label{eq_01}
+        \frac{\partial \rho }{\partial t} + 
+        \nabla\cdot \rho \boldsymbol{u} = 0
+        \end{equation}
+    
+    \item уравнение сохранения компонент смеси
+         \begin{equation}\label{eq_02}
+        \frac{\partial \rho Y_i}{\partial t} + 
+        \nabla\cdot \left(\rho \boldsymbol{u} Y_i \right) = 
+        \nabla \cdot \left( D \nabla Y_i \right)
+        \end{equation}
+
+    \item уравнение сохранения энергии
+         \begin{equation}\label{eq_03}
+        \frac{\partial \rho H}{\partial t} + 
+        \nabla\cdot \left(\rho \boldsymbol{u} H \right) = 
+        \nabla \cdot \left( \lambda \nabla T \right)
+        \end{equation}
+ \end{itemize}
+ 
+ 
+ Проведем преобразование уравнение неразрывности компонент в согласии предложенной постановкой. Раскроем множители в левой части уравнения 
+
+ \begin{equation}\label{eq_04}
+\rho \frac{\partial Y_i}{\partial t} + 
+\rho \boldsymbol{u}\cdot \nabla Y_i + 
+ Y_i \cdot \left( \frac{\partial \rho}{\partial t} + \nabla\cdot \rho \boldsymbol{u} \right) = 
+ 	\nabla \cdot \left( D \nabla Y_i \right)
+\end{equation}
+
+При предположении, что $\rho = const$ уравнение примет вид
+
+\begin{equation}\label{eq_05}
+\rho_0 \frac{\partial Y_i}{\partial t} + 
+\rho_0 \boldsymbol{u}\cdot \nabla Y_i  + 
+Y_i \rho_0 \nabla\cdot \boldsymbol{u} = 
+ 	\nabla \cdot \left( D \nabla Y_i \right)
+\end{equation}
+
+
+Третий член в уравнении \eqref{eq_05} $Y_i \rho_0 \nabla\cdot  \boldsymbol{u}$ должен быть нулевым, что требует выполнения уравнения неразрывности. По алгоритму программы  уравнение неразрывности выполняется при реализации мгновенных пульсаций скоростей.
+
+При преобразовании уравнения сохранения энергии \eqref{eq_03} получим  похожую форму уравнения
+
+\begin{equation}\label{eq_06}
+\rho_0 \frac{\partial H}{\partial t} + 
+\rho_0 \boldsymbol{u}\cdot \nabla H  + 
+H  \rho_0 \nabla\cdot \boldsymbol{u} = 
+\nabla \cdot \left( \lambda \nabla T \right)
+\end{equation}
+
+В уравнении \eqref{eq_06} получаем член $H  \rho_0 \nabla\cdot \boldsymbol{u}$, который будет нулевым только в случае выполнения уравнения реразрывности. 
+
+%\section{Проверка реализации}
+%
+%Проведем проверку функций корреляции при реализации пульсаций. используем формулу
+%
+%\begin{equation}\label{eq_07}
+%R(x,x+\Delta) = <\boldsymbol{u}(x)\cdot \boldsymbol{u}(x+\Delta)>
+%\end{equation}
+\section{Постановка задачи}
+Поле скоростей разделяется на два компонента
+\begin{equation} \label{eq_u_main}
+\boldsymbol{u} = \langle \boldsymbol{u} \rangle + \boldsymbol{u'} \\ ,
+\end{equation}
+
+где $ \langle u \rangle $ средняя скорость  и $u'$ - пульсационная скорость . Известно, что среднее значение пульсационной составляющей сокрости $\langle u`\rangle = 0 $.
+Для воспроизведения изотропной турбулентности сгенерируем поле пульсационных скоростей по формуле
+
+\begin{equation} \label{eq_u_initial}
+\boldsymbol{u}(\boldsymbol{x},t) = 
+\sum_{n=1}^N \sum_{m=1}^M \boldsymbol{p}^{n,m} 
+\cos{\left( \boldsymbol{k}^{n,m} \cdot \boldsymbol{x} + w^{n,m} t \right)} + 
+\boldsymbol{q}^{n,m} \sin{\left( \boldsymbol{k}^{n,m} 
+	\cdot \boldsymbol{x} + w^{n,m} t \right)}
+\end{equation}
+
+где $\boldsymbol{p}^{n,m}$ и $\boldsymbol{q}^{n,m}$ --- векторный величины амплитудой соответствующей спектру кинетической турбулентной энергии и случайным направлением, $\boldsymbol{k}^{n,m}$ --- вектор волнового числа в случайном направлении 
+
+Для выполнения уравнения неразрывности несжимаемой среды требуется выполнение уравнения $\nabla \cdot \boldsymbol{u} = 0$ и ввести ограничения на свободные переменные. Решение уравнения неразрывности в непрерывном виде будет иметь вид.
+
+\begin{equation} \label{eq_u_initial}
+\boldsymbol{u}(\boldsymbol{x},t) = 
+\sum_{n=1}^N \sum_{m=1}^M \boldsymbol{p}^{n,m} 
+\cos{\left( \boldsymbol{k}^{n,m} \cdot \boldsymbol{x} + w^{n,m} t \right)} + 
+\boldsymbol{q}^{n,m} \sin{\left( \boldsymbol{k}^{n,m} 
+	\cdot \boldsymbol{x} + w^{n,m} t \right)}
+\end{equation}
+
+\section*{Вывод}
+
+\section{Генерация поля скоростей}
+
+Для генерации поля скоростей изотропной турбулентности используем подход 
+
+
+Обязательно требуется замыкание скоростей на уравнение неразрывности при реализации случайного распределения скоростей.
+
+\end{document}
