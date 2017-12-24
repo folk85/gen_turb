@@ -90,7 +90,10 @@ H  \rho_0 \nabla\cdot \boldsymbol{u} =
 \boldsymbol{u} = \langle \boldsymbol{u} \rangle + \boldsymbol{u'} \\ ,
 \end{equation}
 
-где $ \langle u \rangle $ средняя скорость  и $u'$ - пульсационная скорость . Известно, что среднее значение пульсационной составляющей сокрости $\langle u`\rangle = 0 $.
+где $ \langle u \rangle $ средняя скорость  и $u'$ - пульсационная скорость . Известно, что среднее значение пульсационной составляющей скорости $\langle u`\rangle = 0 $.
+Поле
+
+
 Для воспроизведения изотропной турбулентности сгенерируем поле пульсационных скоростей по формуле
 
 \begin{equation} \label{eq_u_initial}
@@ -105,12 +108,50 @@ H  \rho_0 \nabla\cdot \boldsymbol{u} =
 
 Для выполнения уравнения неразрывности несжимаемой среды требуется выполнение уравнения $\nabla \cdot \boldsymbol{u} = 0$ и ввести ограничения на свободные переменные. Решение уравнения неразрывности в непрерывном виде будет иметь вид.
 
-\begin{equation} \label{eq_u_initial}
-\boldsymbol{u}(\boldsymbol{x},t) = 
-\sum_{n=1}^N \sum_{m=1}^M \boldsymbol{p}^{n,m} 
-\cos{\left( \boldsymbol{k}^{n,m} \cdot \boldsymbol{x} + w^{n,m} t \right)} + 
-\boldsymbol{q}^{n,m} \sin{\left( \boldsymbol{k}^{n,m} 
-	\cdot \boldsymbol{x} + w^{n,m} t \right)}
+\begin{eqnarray} \label{eq_u_mass_con}
+\nabla\boldsymbol{u}(\boldsymbol{x},t) = 
+\sum_{n=1}^N \sum_{m=1}^M \left[{ \boldsymbol{p}^{n,m}
+ \cdot \left(- \boldsymbol{k}^{n,m}\right)  
+\sin{\left( \boldsymbol{k}^{n,m} \cdot \boldsymbol{x} + w^{n,m} t \right)} 
+\\
++ \boldsymbol{q}^{n,m} 
+\cdot \left( \boldsymbol{k}^{n,m}\right)
+\cos{\left( \boldsymbol{k}^{n,m} 
+	\cdot \boldsymbol{x} + w^{n,m} t \right)} }\right]
+\end{eqnarray}
+
+Для выполнения условий уравнения неразрывности требуется выполнения ортогональности векторов $\boldsymbol{p}^{n,m}$ и $\boldsymbol{k}^{n,m}$ для первого слагаемого и $\boldsymbol{q}^{n,m}$ и $\boldsymbol{k}^{n,m}$ для второго слагаемого. Получаем требование ортогональности для векторов 
+$\boldsymbol{k}^{n,m}\perp \boldsymbol{p}^{n,m}\perp \boldsymbol{q}^{n,m}$. 
+
+Предложенное выражение \ref{eq_u_initial} для генерации поля скоростей можно применять на любой сетке. При численной реализации уравнение неразрывности будет выполняться с небольшой ошибкой. Так же предложенное уравнение скоростей не выполняет граничные условия (специальные или периодические). Однако доля таких ячеек будет сравнительно малой. При генерации трехмерного поля $N\times N\times N$ и периодической границе на трех сторонах получим $3 N^2$ особых ячеек. Получается доля $3 / N$ от всех ячеек. В нашем случае с 2 периодическими границами получаем долю ячеек $2 / N$ \footnote{Численная оценка ошибки от применения периодических границ будет приведена позже.}.
+
+
+
+
+В случае использования структурированной ортогональной сетки выполнение уравнения неразрывности в дискретном виде будет иметь другой вид. Представим выполнение УН в дискретном  виде по оси Х.
+\begin{eqnarray} \label{eq_continum_discrete}
+	\nabla_x \boldsymbol{u}_{i,j,k} = \frac{1}{\Delta_x}\left( u_{i+1/2,j,k}-u_{i-1/2,j,k}\right)
+\end{eqnarray}}
+
+Поставим уравнение \ref{eq_u_initial}  в уравнение неразрывности в виде \ref{eq_continum_discrete}. Далее путем тригонометрических преобразований получим скорректированное условие для векторов  $\boldsymbol{\tilde{k}}^{n,m}\perp \boldsymbol{p}^{n,m}\perp \boldsymbol{q}^{n,m}$. Здесь вектор  $\boldsymbol{{k}}$ преобразуется на дискретном пространстве в 
+\begin{equation} \label{eq_tilde_k}
+\boldsymbol{\tilde{k}} = \left\{ 
+\frac{2}{\Delta_x} \sin{\left( k_x \frac{\Delta_x}{2}  \right)},
+\frac{2}{\Delta_y} \sin{\left( k_y \frac{\Delta_y}{2}  \right)},
+\frac{2}{\Delta_z} \sin{\left( k_z \frac{\Delta_z}{2}  \right)} \right\}
+\end{equation}
+
+Представленное условие снижает отклонения при генерации скоростей.
+
+
+
+Данное условие довольно легко задать. Определяем случайное направление вектора $\boldsymbol{k}^{n,m}$, далее задаем первый единичный вектор случайным распределением. Для вектора $\boldsymbol{\tilde{p}}^{n,m}$ требуем выполнение ортогональности 
+\begin{equation}
+ 	\boldsymbol{\tilde{p}}^{n,m} = \frac{\boldsymbol{\xi} \times \boldsymbol{k}^{n,m} }{\left\|\boldsymbol{\xi} \times \boldsymbol{k}^{n,m} \right\|}
+\end{equation}
+
+\begin{equation}
+ 	\boldsymbol{\tilde{q}}^{n,m} = \frac{\boldsymbol{\tilde{p}}^{n,m} \times \boldsymbol{k}^{n,m} }{\left\|\boldsymbol{\tilde{p}}^{n,m} \times \boldsymbol{k}^{n,m} \right\|}
 \end{equation}
 
 \section*{Вывод}
