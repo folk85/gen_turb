@@ -85,16 +85,15 @@ H  \rho_0 \nabla\cdot \boldsymbol{u} =
 %R(x,x+\Delta) = <\boldsymbol{u}(x)\cdot \boldsymbol{u}(x+\Delta)>
 %\end{equation}
 \section{Постановка задачи}
-Поле скоростей разделяется на два компонента
-\begin{equation} \label{eq_u_main}
-\boldsymbol{u} = \langle \boldsymbol{u} \rangle + \boldsymbol{u'} \\ ,
+
+В работе \cite{kraichnan_diffusion_1970} предложено использовать уравнение поля скоростей \ref{eq_u_kraichman} , которая стаистически воспроизводит спектр изотропной турбулентности. 
+\begin{equation} \label{eq_u_kraichman}
+\boldsymbol{u}(\boldsymbol{x}) = 2 \cdot \sum_{n=1}^{N} \boldsymbol{p}^{n} \cos \left(\boldsymbol{k}^n\cdot \boldsymbol{x}+\psi^n\right)
 \end{equation}
 
-где $ \langle u \rangle $ средняя скорость  и $u'$ - пульсационная скорость . Известно, что среднее значение пульсационной составляющей скорости $\langle u`\rangle = 0 $.
-Поле
+В уравнении \ref{eq_u_kraichman} определены $N$ частотных мод. Уравнение неразрывности выполняется условием перпендикулярности векторов $\boldsymbol{k}^n \perp \boldsymbol{p}^n $ . Вектора $\boldsymbol{k}^n$ и $\boldsymbol{p}^n$ представляются заданной амплитуды и единичным вектором направления. В работе предложена реализация  модели с изменением по времени.
 
-
-Для воспроизведения изотропной турбулентности сгенерируем поле пульсационных скоростей по формуле
+В заметке \cite{saad_comment_2016}  к оригинальной работе \cite{kraichnan_diffusion_1970} проведен анализ подхода и предложен другой подход к представлению уравнения. Уравнение (\ref{eq_u_initial}) дополнено вторым слагаемым и обеспечивает выполнение уравнения неразрывности для дискретного вида. 
 
 \begin{equation} \label{eq_u_initial}
 \boldsymbol{u}(\boldsymbol{x},t) = 
@@ -104,34 +103,41 @@ H  \rho_0 \nabla\cdot \boldsymbol{u} =
 	\cdot \boldsymbol{x} + w^{n,m} t \right)}
 \end{equation}
 
-где $\boldsymbol{p}^{n,m}$ и $\boldsymbol{q}^{n,m}$ --- векторный величины амплитудой соответствующей спектру кинетической турбулентной энергии и случайным направлением, $\boldsymbol{k}^{n,m}$ --- вектор волнового числа в случайном направлении 
+где $\boldsymbol{p}^{n,m}$ и $\boldsymbol{q}^{n,m}$ --- векторный величины амплитудой соответствующей спектру кинетической турбулентной энергии и случайно определнному единичному вектору направления, $\boldsymbol{k}^{n,m}$ --- вектор волнового числа в случайном направлении. 
+
 
 Для выполнения уравнения неразрывности несжимаемой среды требуется выполнение уравнения $\nabla \cdot \boldsymbol{u} = 0$ и ввести ограничения на свободные переменные. Решение уравнения неразрывности в непрерывном виде будет иметь вид.
 
 \begin{eqnarray} \label{eq_u_mass_con}
 \nabla\boldsymbol{u}(\boldsymbol{x},t) = 
-\sum_{n=1}^N \sum_{m=1}^M \left[{ \boldsymbol{p}^{n,m}
+\sum_{n=1}^N \sum_{m=1}^M \left[  \boldsymbol{p}^{n,m}
  \cdot \left(- \boldsymbol{k}^{n,m}\right)  
 \sin{\left( \boldsymbol{k}^{n,m} \cdot \boldsymbol{x} + w^{n,m} t \right)} 
-\\
-+ \boldsymbol{q}^{n,m} 
+	+ \boldsymbol{q}^{n,m} 
 \cdot \left( \boldsymbol{k}^{n,m}\right)
 \cos{\left( \boldsymbol{k}^{n,m} 
-	\cdot \boldsymbol{x} + w^{n,m} t \right)} }\right]
+	\cdot \boldsymbol{x} + w^{n,m} t \right)}  \right]
 \end{eqnarray}
 
-Для выполнения условий уравнения неразрывности требуется выполнения ортогональности векторов $\boldsymbol{p}^{n,m}$ и $\boldsymbol{k}^{n,m}$ для первого слагаемого и $\boldsymbol{q}^{n,m}$ и $\boldsymbol{k}^{n,m}$ для второго слагаемого. Получаем требование ортогональности для векторов 
-$\boldsymbol{k}^{n,m}\perp \boldsymbol{p}^{n,m}\perp \boldsymbol{q}^{n,m}$. 
+Для выполнения условий уравнения неразрывности требуется выполнение ортогональности векторов $\boldsymbol{p}^{n,m}$ и $\boldsymbol{k}^{n,m}$ для первого слагаемого и $\boldsymbol{q}^{n,m}$ и $\boldsymbol{k}^{n,m}$ для второго слагаемого. Получаем дополнительные выражения 
 
-Предложенное выражение \ref{eq_u_initial} для генерации поля скоростей можно применять на любой сетке. При численной реализации уравнение неразрывности будет выполняться с небольшой ошибкой. Так же предложенное уравнение скоростей не выполняет граничные условия (специальные или периодические). Однако доля таких ячеек будет сравнительно малой. При генерации трехмерного поля $N\times N\times N$ и периодической границе на трех сторонах получим $3 N^2$ особых ячеек. Получается доля $3 / N$ от всех ячеек. В нашем случае с 2 периодическими границами получаем долю ячеек $2 / N$ \footnote{Численная оценка ошибки от применения периодических границ будет приведена позже.}.
+\begin{equation}
+\boldsymbol{p}^n \cdot \boldsymbol{k}^n = 0\ ;\ \boldsymbol{q}^n \cdot \boldsymbol{k}^n = 0
+\end{equation}
+
+
+% Получаем требование ортогональности для векторов $\boldsymbol{k}^{n,m}\perp \boldsymbol{p}^{n,m}\perp \boldsymbol{q}^{n,m}$. 
+
+
+Предложенное выражение \ref{eq_u_initial} для генерации поля скоростей можно применять на любой сетке. При численной реализации уравнение неразрывности будет выполняться с небольшой ошибкой. Также предложенное уравнение скоростей не выполняет граничные условия (специальные или периодические). Однако доля таких ячеек будет сравнительно малой. При генерации трехмерного поля $N\times N\times N$ и периодической границе на трех сторонах получим $3 N^2$ особых ячеек. Получается доля $3 / N$ от всех ячеек. В нашем случае с 2 периодическими границами получаем долю ячеек $2 / N$ \footnote{Численная оценка ошибки от применения периодических границ будет приведена позже.}.
 
 
 
 
 В случае использования структурированной ортогональной сетки выполнение уравнения неразрывности в дискретном виде будет иметь другой вид. Представим выполнение УН в дискретном  виде по оси Х.
-\begin{eqnarray} \label{eq_continum_discrete}
+\begin{equation} \label{eq_continum_discrete}
 	\nabla_x \boldsymbol{u}_{i,j,k} = \frac{1}{\Delta_x}\left( u_{i+1/2,j,k}-u_{i-1/2,j,k}\right)
-\end{eqnarray}}
+\end{equation}
 
 Поставим уравнение \ref{eq_u_initial}  в уравнение неразрывности в виде \ref{eq_continum_discrete}. Далее путем тригонометрических преобразований получим скорректированное условие для векторов  $\boldsymbol{\tilde{k}}^{n,m}\perp \boldsymbol{p}^{n,m}\perp \boldsymbol{q}^{n,m}$. Здесь вектор  $\boldsymbol{{k}}$ преобразуется на дискретном пространстве в 
 \begin{equation} \label{eq_tilde_k}
@@ -141,7 +147,41 @@ $\boldsymbol{k}^{n,m}\perp \boldsymbol{p}^{n,m}\perp \boldsymbol{q}^{n,m}$.
 \frac{2}{\Delta_z} \sin{\left( k_z \frac{\Delta_z}{2}  \right)} \right\}
 \end{equation}
 
-Представленное условие снижает отклонения при генерации скоростей.
+Видно, что в дискретном представлении  $\tilde{\boldsymbol{k}}\neq \boldsymbol{k}$, если не выполняется условие $\left(\Delta_x , \Delta_y, \Delta_z\right) \rightarrow 0$, и не выполняется уравнение неразрывности в дискретном виде. В работе \cite{bailly_stochastic_1999} впервые сделано замечание об этом.  
+
+В работе \cite{saad_comment_2016} указано, что применение численных схем высокого порядка может снизить уровень численной ошибки и предложено использовать вариант определения вектора $\tilde{\boldsymbol{k}}$ в виде\footnote{Верность данного утверждения будет проверена ниже.}
+
+\begin{equation} \label{eq_tilde_k_horder}
+\boldsymbol{\tilde{k}} = \left\{ 
+\frac{1}{\Delta_x} \sin{\left( k_x {\Delta_x}  \right)},
+\frac{1}{\Delta_y} \sin{\left( k_y {\Delta_y}  \right)},
+\frac{1}{\Delta_z} \sin{\left( k_z {\Delta_z}  \right)} \right\}.
+\end{equation}
+
+Для генерации поля по времени и пространству используется переменная $w^n = 2\pi f_n$, где $f_n = u' \cdot \boldsymbol{k}^n$. 
+
+\section{Реализация генерации поля}
+ Генерация поля происходит по следующей схеме:
+\begin{enumerate}
+\item Требуется определить размеры расчетной области и количество ячеек по каждому направлению в структурированной сетке.
+\item Определим минимальную и максимальную частоту в соответствии с размером ячейки и масштабом расчетной области.
+\item Определим количество мод и распределения частот.
+\item Определяем случайный единичный вектор по модели:
+	\begin{eqnarray}
+	\boldsymbol{\xi} = \left[\xi_x, \xi_y, \xi_z\right] \\
+	\xi_x = \cos \theta \cdot \cos \psi \nonumber\\ 
+	\xi_y = \cos \theta \cdot \sin \psi  \nonumber\\ 
+	\xi_z = \sin \theta \nonumber
+	\end{eqnarray} 
+	Определяем единичный вектор в полярной стсиеме координат. Здесь требуется задать два случайных числа $\theta \in N[0,2\pi)$ и $\psi \in N[-\pi,\pi)$.
+\item Вычисляем амплитуды векторов 
+\item 
+\item 
+\item 
+\item 
+\item 
+\end{enumerate}
+Представленное условие снижает отклонения при генерации поля скоростей. 
 
 
 
@@ -162,5 +202,12 @@ $\boldsymbol{k}^{n,m}\perp \boldsymbol{p}^{n,m}\perp \boldsymbol{q}^{n,m}$.
 
 
 Обязательно требуется замыкание скоростей на уравнение неразрывности при реализации случайного распределения скоростей.
+
+\medskip
+
+%Sets the bibliography style to UNSRT and imports the 
+%bibliography file "samples.bib".
+\bibliographystyle{plain}
+\bibliography{refers}
 
 \end{document}
