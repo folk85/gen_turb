@@ -14,6 +14,8 @@ module tmp_mod
   real(prec), dimension(:), allocatable :: c_m        !< random numbers inside SIN and COS
   real(prec), dimension(:,:), allocatable :: dphi_m   !< caclculated angle for SIN and COS
   real(prec), dimension(:), allocatable :: cs_m       !< Internal temporary coefficient
+  real(prec), dimension(:), allocatable :: cos_m       !< Internal temporary coefficient
+  real(prec), dimension(:), allocatable :: sin_m       !< Internal temporary coefficient
 
 !-----
 !  Use temporary variables for coordinates and velocities in cells

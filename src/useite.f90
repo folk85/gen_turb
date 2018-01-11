@@ -46,8 +46,11 @@
               jb = lbj(ib)
               ip1 = lb(ib)
               ip2 = lb(jb)
-              fb(ib)=denb(ib)*(ub(1,ib)*sb(1,ib)+ub(2,ib)*sb(2,ib)+
-     *                       ub(3,ib)*sb(3,ib))
+
+              ub(1:3,ib) = (u(1:3,ip1) + u(1:3,ip2)) * 5.0d-1
+              denb(ib) = 5.0d-1 * (den(ip1)+den(ip2))
+
+              fb(ib)=denb(ib)*(ub(1,ib)*sb(1,ib)+ub(2,ib)*sb(2,ib)+ub(3,ib)*sb(3,ib))
 !               fb(jb) = - fb(ib)
 !               WRITE(*,'(a,4i,7es10.2)') "useini bond: ",ib, jb, ip1,ip2
 !      x  , xp(1,ip1),xp(1,ip2), FB(ib), FB(jb),ub(1,ib),u(1,ip1),denb(ib)

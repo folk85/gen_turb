@@ -14,6 +14,8 @@ subroutine tmp_alloc()
   ALLOCATE(c_m(1:i))
   ALLOCATE(dphi_m(1:3,1:i))
   ALLOCATE(cs_m(1:i))
+  ALLOCATE(cos_m(1:i))
+  ALLOCATE(sin_m(1:i))
 
   ac_m(:,:) = 0.0d0
   as_m(:,:) = 0.0d0
@@ -21,6 +23,8 @@ subroutine tmp_alloc()
   c_m(:) = 0.0d0
   dphi_m(:,:) = 0.0d0
   cs_m(:) = 0.0d0
+  cos_m(:) = 0.0d0
+  sin_m(:) = 0.0d0
 
 !-----
 !  Use temporary variables for coordinates and velocities in cells
