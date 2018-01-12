@@ -15,9 +15,9 @@ program gen_flow_saad
   real(prec) :: dly !< Length by Y-corrdinate
   real(prec) :: dlz !< Length by Z-corrdinate
   integer :: nt !< number of elements by time
-  integer :: nx !< number of elements by X-corrdinate
-  integer :: ny !< number of elements by Y-corrdinate
-  integer :: nz !< number of elements by Z-corrdinate
+  ! integer :: nx !< number of elements by X-corrdinate
+  ! integer :: ny !< number of elements by Y-corrdinate
+  ! integer :: nz !< number of elements by Z-corrdinate
 
   ! integer :: nmodes !< number of Modes
 
@@ -71,7 +71,7 @@ program gen_flow_saad
 
   write(*,*) "Welcome into th program"
   ! set  time duration
-  dlt = 1.0d-3
+  dlt = 1.0d-4
   ! set space Length
   dlx = 1.0d-3
   dly = dlx
@@ -82,7 +82,7 @@ program gen_flow_saad
   nz = nx
 
   !set number of timesteps
-  nt = 400
+  nt = 100
   ntimes = nt
 
   !set number of Modes
@@ -135,6 +135,24 @@ program gen_flow_saad
   nels(2) = ny
   nels(3) = nz
 
+
+  !-----------------------------------------------------------------
+
+  ! write(*,*) "Write out time correlation"
+  ! OPEN(121,FILE='store.dat',ACTION="READ")
+  ! do i=1,tcell * ntimes
+  !   read(121,'(3es13.5)') u(1:3,i)
+  ! enddo
+  ! CALL get_cor()
+  ! write(*,'(4es13.5)') 0.0d0, dRtime(0), 0.0d0,dRlong(0),dRtang(0)
+  ! do i = 1, ntimes
+  ! if (i .lt. nx)write(*,'(5es13.5)') dtim(i), dRtime(i),dx_i(1,i),dRlong(i),dRtang(l)
+  ! if (i .ge. nx)write(*,'(4es13.5)') dtim(i), dRtime(i),0.0d0,0.0d0
+  ! enddo
+
+  ! STOP
+  !-----------------------------------------------------------------
+
   
   write(*,*) "Generate  the modes"
   if (icase == 3) THEN
@@ -170,6 +188,15 @@ program gen_flow_saad
       write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
     enddo
   END IF
+
+  write(*,*) "Write out time correlation"
+  CALL get_cor()
+  write(*,'(4es13.5)') 0.0d0, dRtime(0), 0.0d0,dRlong(0),dRtang(0)
+  do i = 1, ntimes
+  if (i .lt. nx)write(*,'(5es13.5)') dtim(i), dRtime(i),dx_i(1,i),dRlong(i),dRtang(l)
+  if (i .ge. nx)write(*,'(4es13.5)') dtim(i), dRtime(i),0.0d0,0.0d0
+  enddo
+  
 
   write(*,*) "Store the array"
   !store the field

@@ -27,11 +27,20 @@ subroutine tmp_alloc()
   sin_m(:) = 0.0d0
 
 
-!-----
-! Allocate timesteps
+  !-----
+  ! Allocate timesteps
   ALLOCATE(dtim(1:ntimes))
   dtim(:) = 0.0d0
 
+
+  !-----
+  ! Allocate Vectors for correlations
+  ALLOCATE(dRtime(0:ntimes))
+  ALLOCATE(dRlong(0:int(tcell**0.333333)))
+  ALLOCATE(dRtang(0:int(tcell**0.333333)))
+  dRtime(:) = 0.0d0
+  dRlong(:) = 0.0d0
+  dRtang(:) = 0.0d0
   RETURN
 end subroutine tmp_alloc
 
@@ -133,3 +142,67 @@ SUBROUTINE rand_normal_sub(nel,mean,stdev,c)
   RETURN
 END SUBROUTINE rand_normal_sub
 
+!----------------------------------------------------------------------
+!>@brief Get correlations Vectors by time and space
+!----------------------------------------------------------------------
+subroutine get_cor()
+  USE tmp_mod
+  USE prec_mod
+  USE comm1
+  implicit none
+  integer :: i, j, k, isc,iec,jsc,jec, itot, l, i1,j1
+  real(prec) :: dtmp, rxx, ryy, rzz
+
+  do k = 0, ntimes - 1
+    dRtime(k) = 0.0d0
+    ! write(*,'(6a5)') "i" , 'ntimes','isc','iec','jsc','jec'
+    itot = ntimes - k
+    do i= 1, itot
+      isc = tcell * (i-1) + 1
+      iec = tcell * (i)
+      jsc = tcell * (i+k-1) + 1
+      jec = tcell * (i+k)
+      ! write(*,'(6i7)') i , ntimes,isc,iec,jsc,jec
+      do j= 1, 3 !ntimes - i + 1
+        dtmp = SUM(u(j,isc:iec)*u(j,jsc:jec)) 
+        dtmp = dtmp / (3.0d0 * DBLE(itot) * DBLE(tcell))
+        dRtime(k) = dRtime(k) + dtmp 
+      enddo
+    enddo
+    ! if (k > 0) dRtime(k) = dRtime(k) / dRtime(0)
+  end do !k = 1, ntimes
+    
+  do l = 0, min(nx,ny) - 1
+    dRlong(l) = 0.0d0
+    rxx = 0.0d0
+    ryy = 0.0d0
+    rzz = 0.0d0
+    do i = 1, nx
+      do j = 1, ny
+        do k = 1, nz
+          i1 = (i-1) * ny * nz + nz * (j-1) + k
+          iec = tcell * (ntimes)
+          if (l + i .LT. nx) THEN
+            j1 = (i-1+l) * ny * nz + nz * (j-1) + k
+            write(*,'(6i8)') i,j,k,l,i1,j1
+            ! write(*,'(5i6)') i,j,k,l,i1,j1
+            isc = 1 
+            rxx = rxx + SUM(u(1,i1:iec:tcell)*u(1,j1:iec:tcell))/DBLE(ntimes)
+          end if !(k1 + i .LE. nx) THEN
+          if (l + j .LT. ny) THEN
+            j1 = (i-1) * ny * nz + nz * (j-1+l) + k
+            ryy = ryy + SUM(u(2,i1::tcell)*u(2,j1::tcell))/DBLE(ntimes)
+          end if !(k1 + i .LE. nx) THEN
+          if (l + k .LT. nz) THEN
+            j1 = (i-1) * ny * nz + nz * (j-1) + k+l
+            rzz = rzz + SUM(u(3,i1::tcell)*u(3,j1::tcell))/DBLE(ntimes)
+          end if !(k1 + i .LE. nx) THEN
+        enddo
+      enddo
+    enddo
+    dRlong(l) = (rxx / DBLE(nx-l)+ryy / DBLE(ny-l)+rzz / DBLE(nz-l)) / 3.0d0
+  enddo !k1 = 0, min(nx,ny)
+
+    
+
+end subroutine get_cor
