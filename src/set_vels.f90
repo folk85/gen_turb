@@ -41,14 +41,10 @@ subroutine set_vels_time_space()
       write(*,*) " In Cycle time",it, icell
       ilog = it
     END IF
-    cs_m(1:nkall) = b_m(1,1:nkall)*xp(1,icell) +&
-                     b_m(2,1:nkall)*xp(2,icell) + &
-                     b_m(3,1:nkall)*xp(3,icell) + &
-                     c_m(1:nkall) * dtim(it)
-    do j= 1, 3
-      u(j,i) = 2.0d0 * SUM(ac_m(j,1:nkall)*COS(cs_m(1:nkall)) &
-        + as_m(j,1:nkall)*SIN(cs_m(1:nkall)))
-    enddo
+    
+    ! Call the same routine as in USEINI
+    CALL set_vels_at_space_time(dtim(it),xp(1:3,icell),u(1:3,i))
+
   enddo
   RETURN
 end subroutine set_vels_time_space
@@ -99,9 +95,9 @@ subroutine set_vels_at_time(dtim_in)
     enddo
   enddo
 
-  CALL exchng(u,3,1)
-  CALL exchng(u,3,2)
-  CALL exchng(u,3,3)
+  ! CALL exchng(u,3,1)
+  ! CALL exchng(u,3,2)
+  ! CALL exchng(u,3,3)
   RETURN
 end subroutine set_vels_at_time
 

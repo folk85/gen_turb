@@ -1,6 +1,6 @@
 # The compiler
 # F_COMP = gfortran
-# F_DB_MOD = True
+F_DB_MOD = True
 F_DB_MOD = False
 F_COMP = ifort
 
@@ -14,8 +14,10 @@ TSTDIR   = tests
 rm       = rm -f
 
 # flags for debugging or for maximum performance, comment as necessary
-FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended -module $(OBJDIR)
-FC_INTEL_RL = -O3 -sox -module $(OBJDIR)
+USE_MKL = True
+LD_MKL = -mkl
+FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended -module $(OBJDIR) $(LD_MKL)
+FC_INTEL_RL = -O3 -sox -module $(OBJDIR) $(LD_MKL)
 
 # FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -ffpe-trap=zero,overflow,underflow -finit-real=nan -J$(OBJDIR)
 FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan -J$(OBJDIR)
@@ -41,7 +43,7 @@ endif
 FCFLAGS += -I/usr/include
 
 # libraries needed for linking, unused in the examples
-LDFLAGS = 
+LDFLAGS =  $(LD_MKL) -lpthread -ldl -lm
 
 # List of executables to be built within the package
 TARGET = main 
@@ -49,7 +51,7 @@ TARGET = main
 # Define python script to show spectr
 PL_SPECTR = $(TSTDIR)/plot_spectr.py
 
-F_FILES := $(wildcard $(SRCDIR)/*.f90)
+F_FILES := $(wildcard $(SRCDIR)/[^u][^s][^e]*.f90)
 FT_FILES := $(wildcard $(TSTDIR)/*.f90)
 OBJ_FILES := $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f90=.o)))
 # OBJ_FILES += $(addprefix $(OBJDIR)/,$(notdir $(F_FILES:.f=.o)))
@@ -60,7 +62,7 @@ all: $(BINDIR)/$(TARGET)
 build: $(OBJ_FILES)
 
 $(BINDIR)/$(TARGET): $(OBJ_FILES)
-	$(F_COMP) $(FCFLAGS) -o $@ $^ $(LDFLAGS)
+	$(F_COMP) $(FCFLAGS) -o $@ $^ $(LDFLAGS) 
 	@echo "Linking complete!"
 
 $(OBJ_FILES): $(OBJDIR)/%.o : $(SRCDIR)/%.f90 ${OBJDIR}/.sentinel

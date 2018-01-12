@@ -7,6 +7,8 @@
 program gen_flow_saad
   USE prec_mod
   USE tmp_mod
+  USE comm0, ONLY: ncell, nsp,nep
+  USE comm1, ONLY: u, xp
   implicit none
   real(prec) :: dlt !< Time duration
   real(prec) :: dlx !< Length by X-corrdinate
@@ -69,24 +71,30 @@ program gen_flow_saad
 
   write(*,*) "Welcome into th program"
   ! set  time duration
-  dlt = 1.0d-2
+  dlt = 1.0d-3
   ! set space Length
-  dlx = 1.0d-1
+  dlx = 1.0d-3
   dly = dlx
   dlz = dlx
   ! set number of nodes
-  nx = 32
+  nx = 20
   ny = nx
   nz = nx
 
   !set number of timesteps
-  nt = 32
+  nt = 400
   ntimes = nt
 
   !set number of Modes
   nmodes = 100
   tcell  = nx * ny * nz
   CALL tmp_alloc()
+
+  !set VALs from FIRE
+  ncell = tcell
+  nsp(1) = 1
+  nsp(1) = ncell
+  CALL comm1_alloc()
 
   !define coordinates
   ALLOCATE(dx_i(1:3,1:nx))
@@ -153,6 +161,7 @@ program gen_flow_saad
 
     write(*,*) "Calculate the velocities"
     CALL set_vels_time_space()
+
 
     write(*,*) "Calcs mean and deviation"
     do i=1, 3

@@ -26,14 +26,6 @@ subroutine tmp_alloc()
   cos_m(:) = 0.0d0
   sin_m(:) = 0.0d0
 
-!-----
-!  Use temporary variables for coordinates and velocities in cells
-  ! i = tcell * ntimes
-  ! ALLOCATE(xp(1:3,1:tcell))
-  ! ALLOCATE(u(1:3,1:i))
-
-  ! xp(:,:) = 0.0d0
-  ! u(:,:) = 0.0d0
 
 !-----
 ! Allocate timesteps
@@ -42,6 +34,28 @@ subroutine tmp_alloc()
 
   RETURN
 end subroutine tmp_alloc
+
+
+!----------------------------------------------------------------------
+!>@brief Initialize the COMM1 module elements
+!!
+subroutine comm1_alloc()
+  USE tmp_mod
+  use comm1
+    implicit none
+    integer :: ikey
+    integer :: i
+!-----
+!  Use temporary variables for coordinates and velocities in cells
+  i = tcell * ntimes
+  ALLOCATE(xp(1:3,1:tcell))
+  ALLOCATE(u(1:3,1:i))
+
+  xp(:,:) = 0.0d0
+  u(:,:) = 0.0d0
+    
+end subroutine comm1_alloc
+
 
 !>@brief set own seed for random generator
 subroutine random_seed_user()
