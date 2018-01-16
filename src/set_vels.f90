@@ -22,30 +22,43 @@ end subroutine set_vels
 
 
 !>@brief Calculate velocities in 4Dim. space (XYZ+Time)
-subroutine set_vels_time_space()
+subroutine set_vels_time_space(icase)
   USE prec_mod
   USE comm1, ONLY: xp, u
   USE tmp_mod
   implicit none
-  integer :: i, j, k, icell, it, ilog, nkall
+  integer, OPTIONAL :: icase
+  integer :: i, j, k, icell, it, ilog, nkall, ic
   real(prec) :: summ, dtmp
 
   ! WRITE(*,*) "Switch Time coefficiet in set_vels_time_space !!!"
 
-  nkall = nmodes * ntimes
-  ilog = 0
-  do i= 1, tcell * ntimes
-    icell = MOD(i-1 , tcell) + 1
-    it = INT((i-1) / tcell) + 1
-    if (it /= ilog) THEN
-      write(*,*) " In Cycle time",it, icell
-      ilog = it
-    END IF
-    
-    ! Call the same routine as in USEINI
-    CALL set_vels_at_space_time(dtim(it),xp(1:3,icell),u(1:3,i))
+  ! if (PRESENT(icase)) then
+  !   ic = icase
+  ! else
+  !   ic = 4
+  ! endif
 
-  enddo
+  ! IF (ic .eq. 4) THEN
+    nkall = nmodes * ntimes
+    ilog = 0
+    do i= 1, tcell * ntimes
+      icell = MOD(i-1 , tcell) + 1
+      it = INT((i-1) / tcell) + 1
+      if (it /= ilog) THEN
+        write(*,*) " In Cycle time",it, icell
+        ilog = it
+      END IF
+      
+      ! Call the same routine as in USEINI
+      CALL set_vels_at_space_time(dtim(it),xp(1:3,icell),u(1:3,i))
+
+    enddo
+  ! ELSE IF (ic .eq. 5) THEN
+  !   ! Call the same routine as in USEINI
+  !   CALL set_vels_at_space_time(dtim(it),xp(1:3,icell),u(1:3,i))
+  ! END IF !(ic .eq. 5) THEN
+
   RETURN
 end subroutine set_vels_time_space
 
@@ -121,31 +134,21 @@ subroutine set_vels_at_space_time(dtim_in,dxx,vels)
   real(prec),dimension(1:3) :: dv_cos!< current time step
   real(prec) :: summ, dtmp
 
-  ! WRITE(*,*) "Switch Time coefficiet in set_vels_time_space !!!"
+  ! 1 - set number of modes in all times
+  nkall = nmodes !* ntimes
 
-  nkall = nmodes * ntimes
-
-  ! cs_m(1:nkall) =  b_m(1,1:nkall)*dxx(1) + &
-  !                  b_m(2,1:nkall)*dxx(2) + &
-  !                  b_m(3,1:nkall)*dxx(3) + &
-  !                  c_m(1:nkall) * dtim_in
-  ! cs_m(1:nkall) = MATMUL(dxx, b_m) + c_m(1:nkall) * dtim_in
-  ! cos_m(1:nkall) = COS(cs_m(1:nkall))
-  ! sin_m(1:nkall) = SIN(cs_m(1:nkall))
+  ! 2 - COS predicted vars
   cs_m(1:nkall) = c_m(1:nkall)
+
+  ! 3 - Calc $ K \cdot x + w t$
   CALL dgemm('N','N',1,nkall,3,1.0d0,dxx,1,b_m,3,dtim_in,cs_m,1)
+  ! 4 - calc sin and cos
   CALL vdsincos(nkall,cs_m(1),sin_m(1),cos_m(1))
-!   do j= 1, 3
-!     ! vels(j) = 2.0d0 * SUM( ac_m(j,1:nkall) * COS(cs_m(1:nkall)))
-! !    vels(j) = 2.0d0 * SUM( ac_m(j,1:nkall) * COS(cs_m(1:nkall)) &
-! !      + as_m(j,1:nkall) * SIN(cs_m(1:nkall)) )
-!     vels(j) = 2.0d0 * SUM( ac_m(j,1:nkall) * cos_m(1:nkall) &
-!       + as_m(j,1:nkall) * sin_m(1:nkall) )
-!   enddo
-  ! vels(1:3) = MATMUL(ac_m, cos_m) + MATMUL(as_m, sin_m)
-  ! vels(1:3) = vels(1:3) * 2.0d0
+  ! 5 - Calc COS  like $AC \cdot \cos{ CS }$
   CALL dgemm('N','N',3,1,nkall,1.0d0,ac_m,3,cos_m,nkall,0.0d0,dv_cos,3)
+  ! 6 - Calc SIN  like $AS \cdot \sin{ CS }$ and add it to prev val.
   CALL dgemm('N','N',3,1,nkall,2.0d0,as_m,3,sin_m,nkall,2.0d0,dv_cos,3)
   vels(1:3) = dv_cos(1:3)
   RETURN
 end subroutine set_vels_at_space_time
+

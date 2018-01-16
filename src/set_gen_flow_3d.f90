@@ -47,7 +47,7 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   integer :: j  !< temporary index
   integer :: ist  !< Starting index
   integer :: ien  !< Ending index
-  ! real(prec) :: dtmp
+  real(prec) :: rand_normal
   ! real(prec) :: dtmp1
   INTERFACE
     function set_eturb(dk, dl_in, dsigma_in) result(de)
@@ -134,9 +134,14 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     CALL set_unit_vector_sub(vtmp(j:j+2),tmp3(1:3))
     dkun_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
     dk_i(1:3,i) = tmp3(1:3) !set_unit_vector(vtmp(1:2,i))
-    dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
-    dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
-    dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
+    ! dk_i(1,i) = 2.0d0 * SIN(5.0d-1 * dx * dkm(i) * tmp3(1)) / dx
+    ! dk_i(2,i) = 2.0d0 * SIN(5.0d-1 * dy * dkm(i) * tmp3(2)) / dy
+    ! dk_i(3,i) = 2.0d0 * SIN(5.0d-1 * dz * dkm(i) * tmp3(3)) / dz
+    !----------
+    ! Set another distribution
+    dk_i(1,i) = 1.0d0 * SIN(1.0d-0 * dx * dkm(i) * tmp3(1)) / dx
+    dk_i(2,i) = 1.0d0 * SIN(1.0d-0 * dy * dkm(i) * tmp3(2)) / dy
+    dk_i(3,i) = 1.0d0 * SIN(1.0d-0 * dz * dkm(i) * tmp3(3)) / dz
   enddo
 
   ! 8 - Define random unity vectors
@@ -157,15 +162,20 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dsim_i(1:3,i))
 
     ! 9b - set for second unit vector in SIN coefficients
-    ! CALL set_unit_vector_sub(vtmp(4*i-1),tmp3(1:3))
-    ! CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dksi_i(1:3,i))
-    CALL cross_product_sub(dsim_i(1:3,i), dk_i(1:3,i),dksi_i(1:3,i))
+    CALL set_unit_vector_sub(vtmp(4*i-1),tmp3(1:3))
+    CALL cross_product_sub(tmp3(1:3), dk_i(1:3,i),dksi_i(1:3,i))
+    ! CALL cross_product_sub(dsim_i(1:3,i), dk_i(1:3,i),dksi_i(1:3,i))
   enddo
 
   ! 10 - Generate random value
-  CALL RANDOM_NUMBER(dpsi(1:nmodes))
-  dw_freq = 1.0d0
-  dpsi(:) = dpsi(:) * 2.0d0 * f_pi * dw_freq
+  ! CALL RANDOM_NUMBER(dpsi(1:nmodes))
+  ! dw_freq = 1.0d0
+  ! dpsi(:) = dpsi(:) * 2.0d0 * f_pi * dw_freq
+  !! According to @cite{juve_1999.pdf} use Gauss distribution function
+  do i=1, nmodes
+    dtmp = dkm(i) * dsigma
+    dpsi(i) = rand_normal(dtmp,dtmp)
+  enddo
 
   ! 11 - Calculate velocities in every point
 
@@ -188,9 +198,9 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   do i = 1, 3
     CALL rand_normal_sub(nmodes,0.0d0,1.0d0,vtmp(1:nmodes))
     ! ac_m(i,ist:ien) = dsim_i(i,:) * SQRT(dqm(:))
-    ac_m(i,ist:ien) = dsim_i(i,:) * SQRT(dqm(:) * vtmp(1:nmodes)**2 * 3.0d0  &
+    ac_m(i,ist:ien) = dsim_i(i,:) * SQRT(dqm(:) * vtmp(1:nmodes)**2 * 1.0d0  &
       /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
-    as_m(i,ist:ien) = dksi_i(i,:) * SQRT(dqm(:) *3.0d0                       &
+    as_m(i,ist:ien) = dksi_i(i,:) * SQRT(dqm(:) *1.0d0                       &
       /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
     b_m(i,ist:ien)  = dkun_i(i,:) * dkm(:)
   enddo
@@ -201,7 +211,7 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   !   j = i + ist - 1
   !   c_m(j)  = dpsi(i) * dsigma * dkm(i)
   ! enddo
-  c_m(ist:ien) = dpsi(:) * dkm(:) * dsigma /3.0d0/4.0d0
+  c_m(ist:ien) = dpsi(:) !* dkm(:) * dsigma /3.0d0/4.0d0
   ! c_m(:)  = dpsi(:)
 
   write(*,*) "END: Generate Spectrum profile"

@@ -2,12 +2,25 @@
 !----------------------------------------------------------------------
 !>@brief Allocate modes arrays
 !!
-subroutine tmp_alloc()
+subroutine tmp_alloc(icase)
   USE tmp_mod
   implicit none
-  integer :: i
+  integer, optional :: icase
+  integer :: i, ic
 
-  i = nmodes * ntimes  
+  ! ic = 4
+  ! ! IF (PRESENT(icase)) ic = icase
+  ! WRITE(*,*) "ICASE " , icase
+  ! ic = icase
+
+  ! IF (ic .eq. 5) THEN
+  !   i = nmodes
+  ! ELSE
+  !   i = nmodes * ntimes  
+  ! END IF
+
+  i = nmodes
+  
   ALLOCATE(ac_m(1:3,1:i))
   ALLOCATE(as_m(1:3,1:i))
   ALLOCATE(b_m(1:3,1:i))
@@ -151,7 +164,7 @@ subroutine get_cor()
   USE comm1
   implicit none
   integer :: i, j, k, isc,iec,jsc,jec, itot, l, i1,j1
-  real(prec) :: dtmp, rxx, ryy, rzz
+  real(prec) :: dtmp, rxx, ryy, rzz, rxy, rxz, ryx, ryz, rzx, rzy
 
   do k = 0, ntimes - 1
     dRtime(k) = 0.0d0
@@ -174,33 +187,45 @@ subroutine get_cor()
     
   do l = 0, min(nx,ny) - 1
     dRlong(l) = 0.0d0
+    dRtang(l) = 0.0d0
     rxx = 0.0d0
+    rxy = 0.0d0
+    rxz = 0.0d0
     ryy = 0.0d0
+    ryx = 0.0d0
+    ryz = 0.0d0
     rzz = 0.0d0
+    rzx = 0.0d0
+    rzy = 0.0d0
     do i = 1, nx
       do j = 1, ny
         do k = 1, nz
           i1 = (i-1) * ny * nz + nz * (j-1) + k
-          iec = tcell * (ntimes)
           if (l + i .LT. nx) THEN
             j1 = (i-1+l) * ny * nz + nz * (j-1) + k
-            write(*,'(6i8)') i,j,k,l,i1,j1
-            ! write(*,'(5i6)') i,j,k,l,i1,j1
-            isc = 1 
-            rxx = rxx + SUM(u(1,i1:iec:tcell)*u(1,j1:iec:tcell))/DBLE(ntimes)
+            rxx = rxx + SUM(u(1,i1::tcell)*u(1,j1::tcell))/DBLE(ntimes)
+            rxy = rxy + SUM(u(2,i1::tcell)*u(2,j1::tcell))/DBLE(ntimes)
+            rxz = rxz + SUM(u(3,i1::tcell)*u(3,j1::tcell))/DBLE(ntimes)
           end if !(k1 + i .LE. nx) THEN
           if (l + j .LT. ny) THEN
             j1 = (i-1) * ny * nz + nz * (j-1+l) + k
             ryy = ryy + SUM(u(2,i1::tcell)*u(2,j1::tcell))/DBLE(ntimes)
+            ryx = ryx + SUM(u(1,i1::tcell)*u(1,j1::tcell))/DBLE(ntimes)
+            ryz = ryz + SUM(u(3,i1::tcell)*u(3,j1::tcell))/DBLE(ntimes)
           end if !(k1 + i .LE. nx) THEN
           if (l + k .LT. nz) THEN
             j1 = (i-1) * ny * nz + nz * (j-1) + k+l
             rzz = rzz + SUM(u(3,i1::tcell)*u(3,j1::tcell))/DBLE(ntimes)
+            rzx = rzx + SUM(u(1,i1::tcell)*u(1,j1::tcell))/DBLE(ntimes)
+            rzy = rzy + SUM(u(2,i1::tcell)*u(2,j1::tcell))/DBLE(ntimes)
           end if !(k1 + i .LE. nx) THEN
         enddo
       enddo
     enddo
     dRlong(l) = (rxx / DBLE(nx-l)+ryy / DBLE(ny-l)+rzz / DBLE(nz-l)) / 3.0d0
+    dRtang(l) = dRtang(l) + (rxy + rxz) / DBLE(nx-l) / 6.0d0
+    dRtang(l) = dRtang(l) + (ryx + ryz) / DBLE(ny-l) / 6.0d0
+    dRtang(l) = dRtang(l) + (rzx + rzy) / DBLE(nz-l) / 6.0d0
   enddo !k1 = 0, min(nx,ny)
 
     

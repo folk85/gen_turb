@@ -79,7 +79,7 @@ print:
 
 .PHONY: clean
 clean:
-	@$(rm) $(OBJ_FILES) *.mod
+	@$(rm) $(OBJ_FILES) *.mod $(BINDIR)/$(TARGET)/*_genmod.*
 	@echo "Cleanup complete!"
 
 .PHONY: remove

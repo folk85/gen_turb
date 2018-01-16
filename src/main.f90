@@ -41,7 +41,24 @@ program gen_flow_saad
   logical :: ltest = .FALSE.   !< Set test run  .TRUE.
   real(prec) :: rand_normal !< RNG function
 !-----
-  integer :: icase = 4                       !< Set the case, which we want to run
+  integer :: icase = 5                       !< Set the case, which we want to run
+
+  interface
+  subroutine tmp_alloc(icase)
+  USE tmp_mod
+  implicit none
+  integer, optional :: icase
+  end subroutine tmp_alloc
+
+  subroutine set_vels_time_space(icase)
+    USE prec_mod
+    USE comm1, ONLY: xp, u
+    USE tmp_mod
+    implicit none
+    integer, OPTIONAL :: icase
+  end subroutine set_vels_time_space
+
+  end interface
   ! real(prec), allocatable :: u(:,:,:,:)
 
   ! write(*,*) "Check cross_product _ initial"
@@ -71,13 +88,13 @@ program gen_flow_saad
 
   write(*,*) "Welcome into th program"
   ! set  time duration
-  dlt = 1.0d-4
+  dlt = 1.0d-5
   ! set space Length
-  dlx = 1.0d-3
+  dlx = 5.0d-3
   dly = dlx
   dlz = dlx
   ! set number of nodes
-  nx = 20
+  nx = 100
   ny = nx
   nz = nx
 
@@ -86,7 +103,7 @@ program gen_flow_saad
   ntimes = nt
 
   !set number of Modes
-  nmodes = 100
+  nmodes = 10000
   tcell  = nx * ny * nz
   CALL tmp_alloc()
 
@@ -122,7 +139,7 @@ program gen_flow_saad
   in_time = 1
 
   !set the Integral values
-  dlength = 7.0d-2
+  dlength = 1.0d-2
   dsigma = 1.0d+1
   dtau = dlength / dsigma
 
@@ -156,6 +173,9 @@ program gen_flow_saad
   
   write(*,*) "Generate  the modes"
   if (icase == 3) THEN
+    !-----
+    ! Generate modes accoring to Kraichnan article
+    !
     ! generate fields
     CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
 
@@ -163,12 +183,10 @@ program gen_flow_saad
     write(*,*) "Calculate the velocities"
     CALL set_vels()
 
-    do i=1, 3
-      dmean_i(i) = SUM(u(i,:)) / DBLE(tcell)
-      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(tcell))
-      write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
-    enddo
   ELSE IF (icase == 4) THEN
+    !-----
+    ! Generate modes accoring to time and space modes
+    !
     write(*,*) "work in 3D-space + Time"
 
     do i = 1, ntimes
@@ -178,25 +196,38 @@ program gen_flow_saad
     end do
 
     write(*,*) "Calculate the velocities"
-    CALL set_vels_time_space()
+    CALL set_vels_time_space(icase)
 
 
-    write(*,*) "Calcs mean and deviation"
-    do i=1, 3
-      dmean_i(i) = SUM(u(i,:)) / DBLE(tcell * ntimes)
-      std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(tcell*ntimes))
-      write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
-    enddo
+  ELSE IF (icase == 5) THEN
+    !-----
+    ! Generate modes accoring to Kraichnan article for different times
+    !
+    write(*,*) "work in 3D-space + Time. Generate only modes"
+
+    ! generate fields
+    CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
+
+    write(*,*) "Calculate the velocities"
+    CALL set_vels_time_space(icase)
+
   END IF
+
+  write(*,*) "Calcs mean and deviation"
+  do i=1, 3
+    dmean_i(i) = SUM(u(i,:)) / DBLE(tcell * ntimes)
+    std_i(i) = SQRT(SUM((u(i,:)-dmean_i(i))**2) / DBLE(tcell*ntimes))
+    write(*,'(i13,2es13.5)') i, dmean_i(i),std_i(i)
+  enddo
 
   write(*,*) "Write out time correlation"
   CALL get_cor()
-  write(*,'(4es13.5)') 0.0d0, dRtime(0), 0.0d0,dRlong(0),dRtang(0)
+  write(*,'(5es13.5)') 0.0d0, dRtime(0), 0.0d0,dRlong(0),dRtang(0)
   do i = 1, ntimes
-  if (i .lt. nx)write(*,'(5es13.5)') dtim(i), dRtime(i),dx_i(1,i),dRlong(i),dRtang(l)
-  if (i .ge. nx)write(*,'(4es13.5)') dtim(i), dRtime(i),0.0d0,0.0d0
+  if (i .lt. nx)write(*,'(5es13.5)') dtim(i), dRtime(i),dx_i(1,i),dRlong(i),dRtang(i)
+  if (i .ge. nx)write(*,'(5es13.5)') dtim(i), dRtime(i),0.0d0,0.0d0,0.0d0
   enddo
-  
+
 
   write(*,*) "Store the array"
   !store the field
