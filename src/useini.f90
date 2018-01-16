@@ -28,9 +28,9 @@
       real(prec) :: dly !< Length by Y-corrdinate
       real(prec) :: dlz !< Length by Z-corrdinate
       integer :: nt !< number of elements by time
-      integer :: nx !< number of elements by X-corrdinate
-      integer :: ny !< number of elements by Y-corrdinate
-      integer :: nz !<@var number of elements by Z-corrdinate
+      ! integer :: nx !< number of elements by X-corrdinate
+      ! integer :: ny !< number of elements by Y-corrdinate
+      ! integer :: nz !<@var number of elements by Z-corrdinate
       integer :: mat !< Number of material
       real(prec) :: dsigma    !< define Deviation of velocities
       real(prec) :: dlength   !< define Integral Length Scale 
@@ -61,22 +61,22 @@
           CALL FIO_UUMESS ('USEINI','I','Set number of OMP to 1','')
 
           ! set  time duration
-          dlt = 3.0d-3
+          dlt = 1.0d-7
           ! set space Length
-          dlx = 1.0d-2
+          dlx = 4.0d-3
           dly = dlx*2.
           dlz = dlx
           ! set number of nodes
-          nx = 50
+          nx = 80
           ny = nx*2
           nz = nx
 
           !set number of timesteps
-          nt = 3000
+          nt = 1
           ntimes = nt
 
           !set number of Modes
-          nmodes = 300
+          nmodes = 10000
           tcell  = nx * ny * nz
           CALL tmp_alloc()
           
@@ -174,6 +174,7 @@
         do i=nsp(mat), nep(mat)
           CALL set_vels_at_space_time(time,xp(1:3,i),u(1:3,i))
         enddo
+        ! u(:,:) =  0.0d0
         CALL exchng(u,3,1)
         CALL exchng(u,3,2)
         CALL exchng(u,3,3)
