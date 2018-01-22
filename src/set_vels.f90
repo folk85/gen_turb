@@ -147,7 +147,7 @@ subroutine set_vels_at_space_time(dtim_in,dxx,vels)
   ! 5 - Calc COS  like $AC \cdot \cos{ CS }$
   CALL dgemm('N','N',3,1,nkall,1.0d0,ac_m,3,cos_m,nkall,0.0d0,dv_cos,3)
   ! 6 - Calc SIN  like $AS \cdot \sin{ CS }$ and add it to prev val.
-  CALL dgemm('N','N',3,1,nkall,2.0d0,as_m,3,sin_m,nkall,2.0d0,dv_cos,3)
+  CALL dgemm('N','N',3,1,nkall,1.0d0,as_m,3,sin_m,nkall,1.0d0,dv_cos,3)
   vels(1:3) = dv_cos(1:3)
   RETURN
 end subroutine set_vels_at_space_time

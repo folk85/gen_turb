@@ -20,6 +20,25 @@ subroutine tmp_alloc(icase)
   ! END IF
 
   i = nmodes
+  ic = 0
+  IF (ALLOCATED(c_m)) ic = SIZE(c_m)
+  !
+  ! 
+  IF (ic.NE.i) THEN
+    IF (ALLOCATED(ac_m)  ) DEALLOCATE(ac_m)  
+    IF (ALLOCATED(as_m)  ) DEALLOCATE(as_m)  
+    IF (ALLOCATED(b_m)   ) DEALLOCATE(b_m)   
+    IF (ALLOCATED(c_m)   ) DEALLOCATE(c_m)   
+    IF (ALLOCATED(dphi_m)) DEALLOCATE(dphi_m)
+    IF (ALLOCATED(cs_m)  ) DEALLOCATE(cs_m)  
+    IF (ALLOCATED(cos_m) ) DEALLOCATE(cos_m) 
+    IF (ALLOCATED(sin_m) ) DEALLOCATE(sin_m) 
+    IF (ALLOCATED(dtim)  ) DEALLOCATE(dtim)  
+    IF (ALLOCATED(dRtang)) DEALLOCATE(dRtang)
+    IF (ALLOCATED(dRlong)) DEALLOCATE(dRlong)
+    IF (ALLOCATED(dRtime)) DEALLOCATE(dRtime)
+  END IF !(ic.NE.i) THEN
+  
   
   ALLOCATE(ac_m(1:3,1:i))
   ALLOCATE(as_m(1:3,1:i))
@@ -56,7 +75,6 @@ subroutine tmp_alloc(icase)
   dRtang(:) = 0.0d0
   RETURN
 end subroutine tmp_alloc
-
 
 !----------------------------------------------------------------------
 !>@brief Initialize the COMM1 module elements
@@ -231,3 +249,60 @@ subroutine get_cor()
     
 
 end subroutine get_cor
+
+
+subroutine read_coef()
+  USE tmp_mod
+  implicit none
+  integer :: ifile
+  logical :: lop
+  CHARACTER(len=128) :: sname
+  CHARACTER(len=256) :: txt1,txt2
+  integer :: i,j
+
+  ifile  = 212
+  INQUIRE(ifile,OPENED= lop)
+  IF(.NOT. lop) THEN
+    OPEN(ifile,FILE=TRIM(sname))
+    ! READ(ifile,*) sname
+    READ(ifile,*) nmodes
+  END IF ! itst.eq.1
+
+  ! Reallocate variables
+  CALL tmp_alloc()
+  !
+  ! Read all coefficients from file
+  DO i = 1, nmodes
+    read(ifile,*) j, ac_m(1:3,i), as_m(1:3,i), b_m(1:3,i), c_m(i)
+  END DO !i = 1, nmodes
+  CLOSE(ifile)
+    
+end subroutine read_coef
+
+
+!----------------------------------------------------------------------
+!>@brief Write config files 
+subroutine write_coef()
+  USE tmp_mod
+  implicit none
+  integer :: ifile
+  logical :: lop
+  CHARACTER(len=128) :: sname
+  CHARACTER(len=256) :: txt1,txt2
+  integer :: i,j
+
+  ifile  = 212
+  INQUIRE(ifile,OPENED= lop)
+  IF(.NOT. lop) THEN
+    WRITE(sname,'(2a)') 'user_coef','.dat'
+    OPEN(ifile,FILE=TRIM(sname))
+    ! WRITE(ifile,'(2a)') 'mode  P_cos_1 P_cos_2 P_cos_3 Q_cos_1', &
+    ! ' Q_cos_2 Q_cos_3 K_1 K_2 K_3 time_freq'
+  END IF ! itst.eq.1
+  write(ifile,'(i7)') nmodes
+  DO i = 1, nmodes
+    write(ifile,'(i6,10es17.9)')i, ac_m(1:3,i), as_m(1:3,i), b_m(1:3,i), c_m(i)
+  END DO !i = 1, nmodes
+  CLOSE(ifile)
+    
+end subroutine write_coef

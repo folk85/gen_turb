@@ -47,6 +47,7 @@
       real(prec), dimension(3)  :: dvels         !<
       CHARACTER(len=256) :: txt1,txt2
       integer :: i,j
+      logical :: lread2restart
 !-----
 !-----------------------------------------------------------------------
 !-----
@@ -82,8 +83,8 @@
           
 
           !set the Integral values
-          dlength = 7.0d-3
-          dsigma = 1.0d0*1.2d0 !2.0d+0
+          dlength = 1.0d-2
+          dsigma = 1.0d0*12.0d+0
           dtau = dlength / dsigma
 
           !generate arrays 
@@ -98,12 +99,22 @@
           write(*,*) "work in 3D-space + Time"
 
           if (mpi_master) then
-            do i = 1, ntimes
-              in_time = nmodes * (i-1) + 1
-            ! generate fields
-              CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
-              write(*,'(2(a,i))') "USEINI: gen_flow_3d:",i,'/',ntimes
-            end do
+
+            !----------------------------------------------------------------
+            lread2restart = .TRUE.
+            lread2restart = .FALSE.
+            !----------------------------------------------------------------
+            IF (lread2restart) THEN
+              CALL read_coef()
+            ELSE
+              do i = 1, ntimes
+                in_time = nmodes * (i-1) + 1
+                ! generate fields
+                CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
+                write(*,'(2(a,i))') "USEINI: gen_flow_3d:",i,'/',ntimes
+              end do
+              CALL write_coef()
+            END IF !(lread2restart) THEN
           endif
 
           i = ntimes * nmodes
