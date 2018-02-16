@@ -196,14 +196,15 @@ subroutine get_cor()
       ! write(*,'(6i7)') i , ntimes,isc,iec,jsc,jec
       do j= 1, 3 !ntimes - i + 1
         dtmp = SUM(u(j,isc:iec)*u(j,jsc:jec)) 
-        dtmp = dtmp / (3.0d0 * DBLE(itot) * DBLE(tcell))
+        dtmp = dtmp / DBLE(tcell)
         dRtime(k) = dRtime(k) + dtmp 
       enddo
     enddo
-    ! if (k > 0) dRtime(k) = dRtime(k) / dRtime(0)
+    dRtime(k) = dRtime(k) / DBLE(itot) / 3.0d0
+    if (k > 0) dRtime(k) = dRtime(k) / dRtime(0)
   end do !k = 1, ntimes
     
-  do l = 0, min(nx,ny) - 1
+  do l = 0, min(nx,ny,nz) - 1
     dRlong(l) = 0.0d0
     dRtang(l) = 0.0d0
     rxx = 0.0d0
@@ -219,20 +220,20 @@ subroutine get_cor()
       do j = 1, ny
         do k = 1, nz
           i1 = (i-1) * ny * nz + nz * (j-1) + k
-          if (l + i .LT. nx) THEN
-            j1 = (i-1+l) * ny * nz + nz * (j-1) + k
+          if (l + i .LE. nx) THEN
+            j1 = i1 + l * ny * nz
             rxx = rxx + SUM(u(1,i1::tcell)*u(1,j1::tcell))/DBLE(ntimes)
             rxy = rxy + SUM(u(2,i1::tcell)*u(2,j1::tcell))/DBLE(ntimes)
             rxz = rxz + SUM(u(3,i1::tcell)*u(3,j1::tcell))/DBLE(ntimes)
           end if !(k1 + i .LE. nx) THEN
-          if (l + j .LT. ny) THEN
-            j1 = (i-1) * ny * nz + nz * (j-1+l) + k
+          if (l + j .LE. ny) THEN
+            j1 = i1 + nz * l
             ryy = ryy + SUM(u(2,i1::tcell)*u(2,j1::tcell))/DBLE(ntimes)
             ryx = ryx + SUM(u(1,i1::tcell)*u(1,j1::tcell))/DBLE(ntimes)
             ryz = ryz + SUM(u(3,i1::tcell)*u(3,j1::tcell))/DBLE(ntimes)
           end if !(k1 + i .LE. nx) THEN
-          if (l + k .LT. nz) THEN
-            j1 = (i-1) * ny * nz + nz * (j-1) + k+l
+          if (l + k .LE. nz) THEN
+            j1 = i1 + l
             rzz = rzz + SUM(u(3,i1::tcell)*u(3,j1::tcell))/DBLE(ntimes)
             rzx = rzx + SUM(u(1,i1::tcell)*u(1,j1::tcell))/DBLE(ntimes)
             rzy = rzy + SUM(u(2,i1::tcell)*u(2,j1::tcell))/DBLE(ntimes)
@@ -240,10 +241,18 @@ subroutine get_cor()
         enddo
       enddo
     enddo
-    dRlong(l) = (rxx / DBLE(nx-l)+ryy / DBLE(ny-l)+rzz / DBLE(nz-l)) / 3.0d0
-    dRtang(l) = dRtang(l) + (rxy + rxz) / DBLE(nx-l) / 6.0d0
-    dRtang(l) = dRtang(l) + (ryx + ryz) / DBLE(ny-l) / 6.0d0
-    dRtang(l) = dRtang(l) + (rzx + rzy) / DBLE(nz-l) / 6.0d0
+    dRlong(l) = ( rxx * DBLE(nx) / DBLE(nx-l)   &
+                + ryy * DBLE(ny) / DBLE(ny-l)   &
+                + rzz * DBLE(nz) / DBLE(nz-l)) 
+    dRtang(l) = dRtang(l) + (rxy + rxz) * DBLE(nx) / DBLE(nx-l) 
+    dRtang(l) = dRtang(l) + (ryx + ryz) * DBLE(ny) / DBLE(ny-l) 
+    dRtang(l) = dRtang(l) + (rzx + rzy) * DBLE(nz) / DBLE(nz-l) 
+    dRlong(l) = dRlong(l) / (3.0d0 * DBLE(tcell))
+    dRtang(l) = dRtang(l) / (6.0d0 * DBLE(tcell))
+    IF (l > 0) THEN
+      dRlong(l) = dRlong(l) / dRlong(0)
+      dRtang(l) = dRtang(l) / dRtang(0)
+    END IF
   enddo !k1 = 0, min(nx,ny)
 
     

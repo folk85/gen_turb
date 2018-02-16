@@ -137,7 +137,7 @@
         CALL FIO_UUMESS ('USEOUT','I','Define mean values over the domain',txt2)
         dtmp = 0.0d0
         do i=nsp(mat), nep(mat)
-          if (t(i) > 1.20d+3) then
+          if (t(i) > 9.00d+2) then
             dtmp = dtmp + 1.0d0
           endif
         enddo

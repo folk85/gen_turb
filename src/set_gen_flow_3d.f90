@@ -170,7 +170,7 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   ! 10 - Generate random value
   ! CALL RANDOM_NUMBER(dpsi(1:nmodes))
   ! dw_freq = 1.0d0
-  ! dpsi(:) = dpsi(:) * 2.0d0 * f_pi * dw_freq
+  ! dpsi(:) = dpsi(:) * 2.0d0 * f_pi * dkm(:) * dsigma
   !! According to @cite{juve_1999.pdf} use Gauss distribution function
   do i=1, nmodes
     dtmp = dkm(i) * dsigma

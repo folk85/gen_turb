@@ -88,18 +88,18 @@ program gen_flow_saad
 
   write(*,*) "Welcome into th program"
   ! set  time duration
-  dlt = 1.0d-5
+  dlt = 1.0d-6
   ! set space Length
-  dlx = 5.0d-3
+  dlx = 2.0d-3
   dly = dlx
   dlz = dlx
   ! set number of nodes
-  nx = 100
+  nx = 40
   ny = nx
   nz = nx
 
   !set number of timesteps
-  nt = 100
+  nt = 10
   ntimes = nt
 
   !set number of Modes
@@ -144,13 +144,13 @@ program gen_flow_saad
   dtau = dlength / dsigma
 
   !generate arrays 
-  dels(1) = dlx
-  dels(2) = dly
-  dels(3) = dlz
+  dels(1) = dlx * 2.5d+1
+  dels(2) = dly * 2.5d+1
+  dels(3) = dlz * 2.5d+1
 
-  nels(1) = nx
-  nels(2) = ny
-  nels(3) = nz
+  nels(1) = nx * 25
+  nels(2) = ny * 25
+  nels(3) = nz * 25
 
 
   !-----------------------------------------------------------------
@@ -222,11 +222,15 @@ program gen_flow_saad
 
   write(*,*) "Write out time correlation"
   CALL get_cor()
-  write(*,'(5es13.5)') 0.0d0, dRtime(0), 0.0d0,dRlong(0),dRtang(0)
-  do i = 1, ntimes
-  if (i .lt. nx)write(*,'(5es13.5)') dtim(i), dRtime(i),dx_i(1,i),dRlong(i),dRtang(i)
-  if (i .ge. nx)write(*,'(5es13.5)') dtim(i), dRtime(i),0.0d0,0.0d0,0.0d0
+  ion = 121
+  OPEN(ion,file='store_corr.dat')
+  write(ion,'(5es13.5)') 0.0d0, dRtime(0), 0.0d0,dRlong(0),dRtang(0)
+  do i = 1, MAX(ntimes,nx)-1
+    if (i .lt. MIN(nx,ntimes))write(ion,'(5es13.5)') dtim(i), dRtime(i),dx_i(1,i),dRlong(i),dRtang(i)
+    if (i.ge.nx .and. i.lt.ntimes)write(ion,'(5es13.5)') dtim(i), dRtime(i),0.0d0,0.0d0,0.0d0
+    if (i.lt.nx .and. i.ge.ntimes)write(ion,'(5es13.5)') 0.0d0, 0.0d0,dx_i(1,i),dRlong(i),dRtang(i)
   enddo
+  CLOSE(ion)
 
 
   write(*,*) "Store the array"
