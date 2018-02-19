@@ -199,9 +199,11 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
     CALL rand_normal_sub(nmodes,0.0d0,1.0d0,vtmp(1:nmodes))
     ! ac_m(i,ist:ien) = dsim_i(i,:) * SQRT(dqm(:))
     ac_m(i,ist:ien) = dsim_i(i,:) * SQRT(dqm(:) * vtmp(1:nmodes)**2 * 1.0d0  &
-      /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
+      /(1.0d0+vtmp(1:nmodes)**2))* SIGN(1.0d0,vtmp(1:nmodes))
+      ! /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
     as_m(i,ist:ien) = dksi_i(i,:) * SQRT(dqm(:) *1.0d0                       &
-      /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
+      /(1.0d0+vtmp(1:nmodes)**2))* SIGN(1.0d0,vtmp(1:nmodes))
+      ! /(1.0d0+vtmp(1:nmodes)**2)/DBLE(ntimes))* SIGN(1.0d0,vtmp(1:nmodes))
     b_m(i,ist:ien)  = dkun_i(i,:) * dkm(:)
   enddo
 
