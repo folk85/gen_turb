@@ -1,9 +1,29 @@
 # -*- coding: utf-8 -*-
+import os
 import numpy as np
 import matplotlib as m
 import matplotlib.pyplot as plt
 from scipy.fftpack import *
 
+from plot_spectr import *
+
+def main_routine():
+  print(os.getcwd())
+  nfile = './store.dat'
+  #Read the file by blocks to reduce required memory
+  with open(nfile,'r') as f:
+    nel = sum(1 for _ in f)
+    f.close()
+  #repeat for each timesteps
+  nk = 64*64 *64
+  ntimes = nel / nk
+
+def get_nel(nfile):
+  with open(nfile,'r') as f:
+    nel = sum(1 for _ in f)
+    f.close()
+  return nel
+         
 def plot_spectr(uin,vin,win):
 
   alpha = 1.339e0
@@ -14,23 +34,12 @@ def plot_spectr(uin,vin,win):
   # x,y,z = np.genfromtxt('../hita/spectrum.dat',unpack=True)
   # x1,y1,z1 = np.genfromtxt('../hita/spectrum_32.dat',unpack=True)
   
-  # uvel,vvel,wvel = np.genfromtxt('./store.dat',unpack=True)
-  # nk = int(round(np.size(uvel)**(1./3.)))
-  # nel = nk
-
-  # ufft = fftn(uvel.reshape(nk,nk,nk))
-  # vfft = fftn(vvel.reshape(nk,nk,nk))
-  # wfft = fftn(wvel.reshape(nk,nk,nk))
-
-  uvel = uin
-  vvel = vin
-  wvel = win
-  nk = np.shape(uin)[0]
+  uvel,vvel,wvel = np.genfromtxt('./store.dat',unpack=True)
+  nk = int(round(np.size(uvel)**(1./3.)))
   nel = nk
-
-  ufft = fftn(uvel)
-  vfft = fftn(vvel)
-  wfft = fftn(wvel)
+  ufft = fftn(uvel.reshape(nk,nk,nk))
+  vfft = fftn(vvel.reshape(nk,nk,nk))
+  wfft = fftn(wvel.reshape(nk,nk,nk))
   muu = ufft*np.conj(ufft) / nel**6
   mvv = vfft*np.conj(vfft) / nel**6
   mww = wfft*np.conj(wfft) / nel**6
@@ -55,27 +64,27 @@ def plot_spectr(uin,vin,win):
       count[i] = np.size(t[0])  
       spectrum[i] *= 2.*np.pi*k[i]**2/dx**3/(count[i]+1.0e-30)
 
-  # font = {'family': 'Droid Sans',
-  #         'weight': 'normal',
-  #         'size': 12}
-  # m.rc('axes',linewidth=2)
-  # m.rc('font',**font)
-  # m.rc('lines',markeredgewidth=1.0)
-  # f,ax = plt.subplots()
-  # xf = np.linspace(np.log(k[1]/2),np.log(k[nk//2-1]*2.),100)
-  # xf = np.exp(xf)
-  # ax.loglog(xf,Ek(xf,alpha,L,sigma),c='g',lw=2)
-  # ax.loglog(k[:nk//2],spectrum[:nk//2],'bx-',lw=0.5,ms=8)
-  # # ax.loglog(x,y,'bx')
-  # # ax.loglog(x1,y1,'ro')
-  # ax.set_xlabel(u'$k, 1/м$',size='large')
-  # ax.set_ylabel(u'$E(k), м^3/с^2$',size='large')
-  # plt.grid()
-  # plt.tight_layout()
-  # plt.show()
-  # del(f)
-  # del(ax)
-  # plt.clf()
+  font = {'family': 'Droid Sans',
+          'weight': 'normal',
+          'size': 12}
+  m.rc('axes',linewidth=2)
+  m.rc('font',**font)
+  m.rc('lines',markeredgewidth=1.0)
+  f,ax = plt.subplots()
+  xf = np.linspace(np.log(k[1]/2),np.log(k[nk//2-1]*2.),100)
+  xf = np.exp(xf)
+  ax.loglog(xf,Ek(xf,alpha,L,sigma),c='g',lw=2)
+  ax.loglog(k[:nk//2],spectrum[:nk//2],'bx-',lw=0.5,ms=8)
+  # ax.loglog(x,y,'bx')
+  # ax.loglog(x1,y1,'ro')
+  ax.set_xlabel(u'$k, 1/м$',size='large')
+  ax.set_ylabel(u'$E(k), м^3/с^2$',size='large')
+  plt.grid()
+  plt.tight_layout()
+  plt.show()
+  del(f)
+  del(ax)
+  plt.clf()
 
   Rij_x=(ufft*np.conj(ufft)) # compute velo. correlation tensor
   Rij_y=(vfft*np.conj(vfft))
@@ -102,18 +111,18 @@ def plot_spectr(uin,vin,win):
   print("Integral Length Scale Longitudal: %g"%(l11))
   print("Integral Length Scale Tangent: %g"%(l22))
 
-  # f,ax = plt.subplots(1)
-  # ax.plot(r[:NFFT//2+1],R11[:NFFT//2+1],marker='>',mfc='w',lw=2,label=u'$R_{11}$')
-  # ax.plot(r[:NFFT//2+1],R22[:NFFT//2+1],marker='s',markerfacecolor='w',lw=2,label=u'$R_{22}$')
-  # ax.plot(r[:NFFT//2],np.exp(-r[:NFFT//2]/l11))
-  # ax.plot(r[:NFFT//2],1.e0+(1.0e0-R22[NFFT//2])*(np.exp(-r[:NFFT//2]/(l22-R22[NFFT//2]))-1.0e0))
-  # plt.legend()
-  # plt.tight_layout()
-  # ax.set_xlabel(u'$r$')
-  # ax.set_ylabel(u'$R_{11}, R_{22}$')
-  # plt.grid()
-  # plt.show()
-  return [k,spectrum, r,R11,R22]
+  f,ax = plt.subplots(1)
+  ax.plot(r[:NFFT//2+1],R11[:NFFT//2+1],marker='>',mfc='w',lw=2,label=u'$R_{11}$')
+  ax.plot(r[:NFFT//2+1],R22[:NFFT//2+1],marker='s',markerfacecolor='w',lw=2,label=u'$R_{22}$')
+  ax.plot(r[:NFFT//2],np.exp(-r[:NFFT//2]/l11))
+  ax.plot(r[:NFFT//2],1.e0+(1.0e0-R22[NFFT//2])*(np.exp(-r[:NFFT//2]/(l22-R22[NFFT//2]))-1.0e0))
+  plt.legend()
+  plt.tight_layout()
+  ax.set_xlabel(u'$r$')
+  ax.set_ylabel(u'$R_{11}, R_{22}$')
+  plt.grid()
+  plt.show()
+  return [k[:nk//2],spectrum[:nk//2],r[:NFFT//2+1],R11[:NFFT//2+1],R22[:NFFT//2+1]]
 
 def Ek(k,alpha=1.339,L=0.01,sigma=10.):
   tmp = (alpha * L * k) **2
@@ -121,6 +130,5 @@ def Ek(k,alpha=1.339,L=0.01,sigma=10.):
   return tmp
 
 if __name__ == '__main__':
-  plot_spectr()
-
+  main_routine()
 

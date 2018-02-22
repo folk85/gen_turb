@@ -4,7 +4,7 @@ import matplotlib as m
 import matplotlib.pyplot as plt
 from scipy.fftpack import *
 
-def plot_spectr():
+def plot_spectr(uin,vin,win):
 
   alpha = 1.339e0
   L = 1.0e-1
@@ -102,7 +102,7 @@ def plot_spectr():
   ax.set_ylabel(u'$R_{11}, R_{22}$')
   plt.grid()
   plt.show()
-  return
+  return [k[:nk//2],spectrum[:nk//2],r[:NFFT//2+1],R11[:NFFT//2+1],R22[:NFFT//2+1]]
 
 def Ek(k,alpha=1.339,L=0.01,sigma=10.):
   tmp = (alpha * L * k) **2
@@ -110,6 +110,7 @@ def Ek(k,alpha=1.339,L=0.01,sigma=10.):
   return tmp
 
 if __name__ == '__main__':
-  plot_spectr()
+  uvel,vvel,wvel = np.genfromtxt('./store.dat',unpack=True)
+  [kx,e,rx,r11,r22] = plot_spectr(uvel,vvel,wvel)
 
 
