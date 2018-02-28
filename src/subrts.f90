@@ -19,7 +19,7 @@ subroutine tmp_alloc(icase)
   !   i = nmodes * ntimes  
   ! END IF
 
-  i = nmodes
+  i = nmodes * ntimes
   ic = 0
   IF (ALLOCATED(c_m)) ic = SIZE(c_m)
   !
@@ -106,9 +106,10 @@ subroutine random_seed_user()
   INTEGER, DIMENSION(1:8) :: dt_seed
   ! ----- end of variables for seed setting -----
 
-  ! write(*,*) "Use the same RANDOM_SEED(1) to reproduce results"
-  ! ! CALL RANDOM_SEED(1)
-  ! RETURN
+  write(*,*) "Use the same RANDOM_SEED(1) to reproduce results"
+  i_seed = 1
+  CALL RANDOM_SEED(i_seed)
+  RETURN
 
   ! ----- Set up random seed portably -----
   CALL RANDOM_SEED(size=i_seed)
@@ -160,7 +161,7 @@ SUBROUTINE rand_normal_sub(nel,mean,stdev,c)
     WRITE(*,*) "Standard Deviation must be +ve"
   ELSE
     
-    CALL random_seed_user()
+    ! CALL random_seed_user()
 
     CALL RANDOM_NUMBER(temp(1:nel*2))
     
@@ -268,6 +269,13 @@ subroutine read_coef()
   CHARACTER(len=128) :: sname
   CHARACTER(len=256) :: txt1,txt2
   integer :: i,j
+  interface
+    subroutine tmp_alloc(icase)
+    USE tmp_mod
+    implicit none
+    integer, optional :: icase
+    end subroutine tmp_alloc
+  end interface
 
   ifile  = 212
   INQUIRE(ifile,OPENED= lop)

@@ -41,7 +41,7 @@ program gen_flow_saad
   logical :: ltest = .FALSE.   !< Set test run  .TRUE.
   real(prec) :: rand_normal !< RNG function
 !-----
-  integer :: icase = 5                       !< Set the case, which we want to run
+  integer :: icase = 4                       !< Set the case, which we want to run
 
   interface
   subroutine tmp_alloc(icase)
@@ -88,18 +88,18 @@ program gen_flow_saad
 
   write(*,*) "Welcome into th program"
   ! set  time duration
-  dlt = 1.0d-6
+  dlt = 2.0d-6
   ! set space Length
-  dlx = 2.0d-3
+  dlx = 3.0d-4
   dly = dlx
   dlz = dlx
   ! set number of nodes
-  nx = 40
+  nx = 4
   ny = nx
   nz = nx
 
   !set number of timesteps
-  nt = 10
+  nt = 4
   ntimes = nt
 
   !set number of Modes
@@ -110,7 +110,7 @@ program gen_flow_saad
   !set VALs from FIRE
   ncell = tcell
   nsp(1) = 1
-  nsp(1) = ncell
+  nep(1) = ncell
   CALL comm1_alloc()
 
   !define coordinates
@@ -144,13 +144,13 @@ program gen_flow_saad
   dtau = dlength / dsigma
 
   !generate arrays 
-  dels(1) = dlx * 2.5d+1
-  dels(2) = dly * 2.5d+1
-  dels(3) = dlz * 2.5d+1
+  dels(1) = dlx !* 2.5d+1
+  dels(2) = dly !* 2.5d+1
+  dels(3) = dlz !* 2.5d+1
 
-  nels(1) = nx * 25
-  nels(2) = ny * 25
-  nels(3) = nz * 25
+  nels(1) = nx !* 25
+  nels(2) = ny !* 25
+  nels(3) = nz !* 25
 
 
   !-----------------------------------------------------------------
