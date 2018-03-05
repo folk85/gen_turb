@@ -58,6 +58,21 @@ program gen_flow_saad
     integer, OPTIONAL :: icase
   end subroutine set_vels_time_space
 
+  ! subroutine tmp_alloc(icase)
+  !   USE tmp_mod
+  !   implicit none
+  !   integer, optional :: icase
+  ! end subroutine tmp_alloc
+ 
+  ! subroutine set_vels_time_space(icase)
+  !   USE prec_mod
+  !   USE comm1, ONLY: xp, u
+  !   USE tmp_mod
+  !   implicit none
+  !   integer, OPTIONAL :: icase
+  ! end subroutine set_vels_time_space
+        
+
   end interface
   ! real(prec), allocatable :: u(:,:,:,:)
 
@@ -94,18 +109,19 @@ program gen_flow_saad
   dly = dlx
   dlz = dlx
   ! set number of nodes
-  nx = 4
+  nx = 16
   ny = nx
   nz = nx
 
   !set number of timesteps
-  nt = 4
-  ntimes = nt
+  nt = 60
+  ntimes = 60
 
   !set number of Modes
-  nmodes = 10000
+  nmodes = 1000
+  nkmod = nmodes * nt
   tcell  = nx * ny * nz
-  CALL tmp_alloc()
+  CALL tmp_alloc(icase)
 
   !set VALs from FIRE
   ncell = tcell

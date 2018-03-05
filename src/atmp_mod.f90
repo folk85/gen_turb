@@ -8,6 +8,7 @@ module tmp_mod
   implicit none
   integer :: nmodes                                   !< number of Modes
   integer :: ntimes                                   !< number of timesteps
+  integer :: nkmod                                   !< number of overall modes
   real(prec), dimension(:,:), allocatable :: ac_m     !< coefficient amplitude with COS
   real(prec), dimension(:,:), allocatable :: as_m     !< coefficient amplitude with SIN
   real(prec), dimension(:,:), allocatable :: b_m      !< coefficient vector K inside SIN and COS

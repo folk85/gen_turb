@@ -39,16 +39,16 @@ subroutine set_vels_time_space(icase)
   ! else
   !   ic = 4
   ! endif
-  ! do i = 1, ntimes
-  !   write(*,*) " In Cycle time new_vec"
-  !   icell = tcell
-  !   CALL set_vels_at_space_time2(dtim(i),icell,xp(1:3,1:icell),u_tmp(1:3,1:tcell))
-  !   u(1:3,tcell*(i-1)+1:tcell*i) = u_tmp(1:3,1:tcell)
-  ! end do
-  ! return
+  do i = 1, ntimes
+    icell = tcell
+    write(*,'(a,4i)') " In Cycle time new_vec", i , ntimes,tcell, icell
+    CALL set_vels_at_space_time2(dtim(i),icell,xp(1:3,1:icell),u_tmp(1:3,1:tcell))
+    u(1:3,tcell*(i-1)+1:tcell*i) = u_tmp(1:3,1:tcell)
+  end do
+  return
 
   ! IF (ic .eq. 4) THEN
-    nkall = nmodes * ntimes
+    nkall = nkmod
     ilog = 0
     do i= 1, tcell * ntimes
       icell = MOD(i-1 , tcell) + 1
@@ -59,8 +59,8 @@ subroutine set_vels_time_space(icase)
       END IF
       
       ! Call the same routine as in USEINI
-      ! CALL set_vels_at_space_time(dtim(it),xp(1:3,icell),u(1:3,i))
-      CALL set_vels_at_space_time2(dtim(it),1,xp(1:3,icell),u(1:3,i))
+      CALL set_vels_at_space_time(dtim(it),xp(1:3,icell),u(1:3,i))
+      ! CALL set_vels_at_space_time2(dtim(it),1,xp(1:3,icell),u(1:3,i))
 
     enddo
   ! ELSE IF (ic .eq. 5) THEN
@@ -90,7 +90,7 @@ subroutine set_vels_at_time(dtim_in)
 
   ! WRITE(*,*) "Switch Time coefficiet in set_vels_time_space !!!"
 
-  nkall = nmodes * ntimes
+  nkall = nkmod
   ilog = 0
 
   ilog = INT(ncell**(0.66666667))
@@ -144,7 +144,7 @@ subroutine set_vels_at_space_time(dtim_in,dxx,vels)
   real(prec) :: summ, dtmp
 
   ! 1 - set number of modes in all times
-  nkall = nmodes * ntimes
+  nkall = nkmod
 
   ! 2 - COS predicted vars
   cs_m(1:nkall) = c_m(1:nkall)
@@ -178,24 +178,28 @@ subroutine set_vels_at_space_time2(dtim_in,inel,dxx,vels)
   integer, intent(in) :: inel !< current time step
   real(prec),dimension(1:3,1:inel), intent(in) :: dxx !< current time step
   real(prec),dimension(1:3,1:inel), intent(out) :: vels !< current time step
-  
+  !------
   integer :: i, j, k, icell, it, ilog, nkall, nel
+
   real(prec),dimension(1:3,1:inel) :: dv_cos!< current time step
-  real(prec),dimension(1:nmodes*ntimes,1:inel) :: dcs!< current time step
-  real(prec),dimension(1:nmodes*ntimes,1:inel) :: dcos_v!< current time step
-  real(prec),dimension(1:nmodes*ntimes,1:inel) :: dsin_v!< current time step
-  ! real(prec),dimension(1:nmodes*ntimes*inel) :: dcs!< current time step
+  ! real(prec),dimension(1:nkmod,1:inel) :: dcs!< current time step
+  real(prec),dimension(1:nkmod,1:inel) :: dcos_v!< current time step
+  real(prec),dimension(1:nkmod,1:inel) :: dsin_v!< current time step
+  real(prec),dimension(1:nkmod*inel) :: dcs!< current time step
   ! real(prec),dimension(1:nmodes*ntimes*inel) :: dcos_v!< current time step
   ! real(prec),dimension(1:nmodes*ntimes*inel) :: dsin_v!< current time step
   real(prec) :: summ, dtmp
 
   ! 1 - set number of modes in all times
-  nkall = nmodes * ntimes
+  nkall = nkmod
   nel = inel
+  ! dcs(1:nkmod,1:inel) = 0.0d0
 
-  do i = 1, inel
-    dcs(1:nkall,i) = c_m(1:nkall)
-    ! dcs((i-1)*nkall+1:nkall*i) = c_m(1:nkall)
+  do i = 1, nel
+    ! dcs(1:nkall,i) = c_m(1:nkall)
+    write(*,*)i, nel
+    ! dcs(:,i) = c_m(:)
+    dcs((i-1)*nkall+1:nkall*i) = c_m(1:nkall)
   enddo
   ! 2 - COS predicted vars
   ! cs_m(1:nkall) = c_m(1:nkall)
@@ -205,10 +209,10 @@ subroutine set_vels_at_space_time2(dtim_in,inel,dxx,vels)
   ! CALL dgemm('N','N',nel,nkall,3,1.0d0,dxx,nel,b_m,3,dtim_in,cs_m,nel)
   CALL dgemm('T','N',nkall,nel,3,1.0d0,b_m,3,dxx,3,dtim_in,dcs,nkall)
   ! call gemm(b_m, dxx, cs_m ,transa='T',transb='N')
-  write(*,'(a,8es13.5)')"A2: ", dcs(1:8,1)
+  ! write(*,'(a,8es13.5)')"A2: ", dcs(1:8,1)
   ! write(*,'(a,8es13.5)')"A2: ", cs_m(1:8)
   ! 4 - calc sin and cos
-  CALL vdsincos(nkall*nel,dcs(1,1),dsin_v(1,1),dcos_v(1,1))
+  CALL vdsincos(nkall*nel,dcs(1),dsin_v(1,1),dcos_v(1,1))
   ! do i = 1, inel
   !   j = nkall * (i-1)
   !   CALL vdsincos(nkall,dcs(j),dsin_v(j),dcos_v(j))

@@ -1,7 +1,7 @@
 # The compiler
 # F_COMP = gfortran
 F_DB_MOD = True
-F_DB_MOD = False
+# F_DB_MOD = False
 F_COMP = ifort
 
 # change these to proper directories where each file should be
@@ -15,7 +15,7 @@ rm       = rm -f
 
 # flags for debugging or for maximum performance, comment as necessary
 USE_MKL = True
-LD_MKL = -mkl
+LD_MKL = -mkl -L $(MKLPATH) -I $(MKLINCLUDE) -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm 
 FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended -module $(OBJDIR) $(LD_MKL)
 FC_INTEL_RL = -O3 -sox -module $(OBJDIR) $(LD_MKL)
 

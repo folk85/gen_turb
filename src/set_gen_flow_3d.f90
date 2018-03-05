@@ -213,7 +213,7 @@ subroutine gen_flow_3d(dls,nels,dsigma,dlength,dtau)
   !   j = i + ist - 1
   !   c_m(j)  = dpsi(i) * dsigma * dkm(i)
   ! enddo
-  c_m(ist:ien) = dpsi(:) !* dkm(:) * dsigma /3.0d0/4.0d0
+  c_m(ist:ien) = dpsi(1:nmodes) !* dkm(:) * dsigma /3.0d0/4.0d0
   ! c_m(:)  = dpsi(:)
 
   write(*,*) "END: Generate Spectrum profile"

@@ -19,7 +19,7 @@ subroutine tmp_alloc(icase)
   !   i = nmodes * ntimes  
   ! END IF
 
-  i = nmodes * ntimes
+  i = nkmod
   ic = 0
   IF (ALLOCATED(c_m)) ic = SIZE(c_m)
   !
