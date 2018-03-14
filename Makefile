@@ -1,7 +1,7 @@
 # The compiler
-# F_COMP = gfortran
+F_COMP = gfortran
 F_DB_MOD = True
-# F_DB_MOD = False
+F_DB_MOD = False
 F_COMP = ifort
 
 # change these to proper directories where each file should be
@@ -13,11 +13,35 @@ OBJDIR_RL   = $(BINDIR)/obj-rl
 TSTDIR   = tests
 rm       = rm -f
 
+EXT=so 
+
+_IA=intel64 
+# _IA=ia32 
+
+RES_EXT=so
+
+MKL_PATH = "$(MKLROOT)/lib/$(_IA)"
+CMPLR_PATH = "$(MKLROOT)/../compiler/lib/$(_IA)"
+
+THREADING_LIB = mkl_$(IFACE_THREADING_PART)_thread
+
+CORE_LIB = mkl_core
+
+MKL_LIBS = -L$(MKL_PATH) -l$(IFACE_LIB) -l$(THREADING_LIB) -l$(CORE_LIB)
+
 # flags for debugging or for maximum performance, comment as necessary
 USE_MKL = True
-LD_MKL = -mkl -L $(MKLPATH) -I $(MKLINCLUDE) -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm 
+
+LD_MKL = -L$(MKL_PATH) -L$(CMPLR_PATH) -mkl -lmkl_intel_thread -lmkl_core -liomp5
+LD_MKL_GNU  = -L$(MKL_PATH) -L$(CMPLR_PATH) -lmkl_gf -lmkl_gnu_thread -lmkl_core -liomp5
 FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended -module $(OBJDIR) $(LD_MKL)
 FC_INTEL_RL = -O3 -sox -module $(OBJDIR) $(LD_MKL)
+
+# flags for debugging or for maximum performance, comment as necessary
+# USE_MKL = True
+# LD_MKL = -mkl -L $(MKLPATH) -I $(MKLINCLUDE) -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm 
+# FC_INTEL_DB = -g -check all -fpe0 -warn -traceback -debug extended -module $(OBJDIR) $(LD_MKL)
+# FC_INTEL_RL = -O3 -sox -module $(OBJDIR) $(LD_MKL)
 
 # FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -ffpe-trap=zero,overflow,underflow -finit-real=nan -J$(OBJDIR)
 FC_GNU_DB = -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan -J$(OBJDIR)
@@ -30,12 +54,18 @@ ifeq ($(F_DB_MOD),True)
 else
 	FC_INTEL=$(FC_INTEL_RL)
 	FC_GNU=$(FC_GNU_RL)
-	OBJDIR = $(OBJDIR_RL)
+	OBJDIR = $(OBJDIR_RL) 
 endif
 ifeq ($(F_COMP),ifort)
 	FCFLAGS=$(FC_INTEL)
+	LDFLAGS =  $(LD_MKL) -lpthread -ldl -lm
+	OBJDIR = $(OBJDIR_RL)
+	TARGET = main 
 else
 	FCFLAGS=$(FC_GNU)
+	LDFLAGS =  $(LD_MKL_GNU) -lpthread -ldl -lm
+	OBJDIR = $(OBJDIR_RL)-gnu
+	TARGET = main_gnu 
 endif
 
 
@@ -43,10 +73,10 @@ endif
 FCFLAGS += -I/usr/include
 
 # libraries needed for linking, unused in the examples
-LDFLAGS =  $(LD_MKL) -lpthread -ldl -lm
+# LDFLAGS =  $(LD_MKL) -lpthread -ldl -lm
 
 # List of executables to be built within the package
-TARGET = main 
+# TARGET = main 
 
 # Define python script to show spectr
 PL_SPECTR = $(TSTDIR)/plot_spectr.py

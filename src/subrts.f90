@@ -23,6 +23,7 @@ subroutine tmp_alloc(icase)
   ic = 0
   IF (ALLOCATED(c_m)) ic = SIZE(c_m)
   !
+  write(*,*) "tmp_alloc nkmod = ", nkmod, ic
   ! 
   IF (ic.NE.i) THEN
     IF (ALLOCATED(ac_m)  ) DEALLOCATE(ac_m)  
@@ -37,9 +38,11 @@ subroutine tmp_alloc(icase)
     IF (ALLOCATED(dRtang)) DEALLOCATE(dRtang)
     IF (ALLOCATED(dRlong)) DEALLOCATE(dRlong)
     IF (ALLOCATED(dRtime)) DEALLOCATE(dRtime)
+  ELSE 
+    RETURN
   END IF !(ic.NE.i) THEN
   
-  
+
   ALLOCATE(ac_m(1:3,1:i))
   ALLOCATE(as_m(1:3,1:i))
   ALLOCATE(b_m(1:3,1:i))
@@ -280,6 +283,7 @@ subroutine read_coef()
   ifile  = 212
   INQUIRE(ifile,OPENED= lop)
   IF(.NOT. lop) THEN
+    WRITE(sname,'(2a)') 'user_coef','.dat'
     OPEN(ifile,FILE=TRIM(sname))
     ! READ(ifile,*) sname
     READ(ifile,*) nmodes

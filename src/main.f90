@@ -41,7 +41,8 @@ program gen_flow_saad
   logical :: ltest = .FALSE.   !< Set test run  .TRUE.
   real(prec) :: rand_normal !< RNG function
 !-----
-  integer :: icase = 4                       !< Set the case, which we want to run
+  integer :: icase = 5                       !< Set the case, which we want to run
+  logical :: lread2restart = .FALSE.         !< Set read or generate coefficients
 
   interface
   subroutine tmp_alloc(icase)
@@ -114,11 +115,11 @@ program gen_flow_saad
   nz = nx
 
   !set number of timesteps
-  nt = 60
-  ntimes = 60
+  nt = 1 !60
+  ntimes = 10
 
   !set number of Modes
-  nmodes = 1000
+  nmodes = 10000
   nkmod = nmodes * nt
   tcell  = nx * ny * nz
   CALL tmp_alloc(icase)
@@ -222,7 +223,13 @@ program gen_flow_saad
     write(*,*) "work in 3D-space + Time. Generate only modes"
 
     ! generate fields
-    CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
+    IF (lread2restart) THEN
+      CALL read_coef()
+    ELSE
+      CALL gen_flow_3d(dels, nels, dsigma, dlength, dtau)
+
+      CALL write_coef()
+    endif
 
     write(*,*) "Calculate the velocities"
     CALL set_vels_time_space(icase)

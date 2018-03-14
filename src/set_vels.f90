@@ -41,7 +41,7 @@ subroutine set_vels_time_space(icase)
   ! endif
   do i = 1, ntimes
     icell = tcell
-    write(*,'(a,4i)') " In Cycle time new_vec", i , ntimes,tcell, icell
+    ! write(*,'(a,4i7)') " In Cycle time new_vec", i , ntimes,tcell, icell
     CALL set_vels_at_space_time2(dtim(i),icell,xp(1:3,1:icell),u_tmp(1:3,1:tcell))
     u(1:3,tcell*(i-1)+1:tcell*i) = u_tmp(1:3,1:tcell)
   end do
@@ -105,7 +105,7 @@ subroutine set_vels_at_time(dtim_in)
     ! END IF
     k = MOD(icell-1,ilog)
     if (mpi_master .and. k.eq.0) then
-      write(*,'(2(a,i))') "Gen vels : ",INT(icell/ilog),"/",il
+      write(*,'(2(a20,i7))') "Gen vels : ",INT(icell/ilog),"/",il
     endif
     cs_m(1:nkall) =  b_m(1,1:nkall)*xp(1,icell) + &
                      b_m(2,1:nkall)*xp(2,icell) + &
@@ -185,7 +185,7 @@ subroutine set_vels_at_space_time2(dtim_in,inel,dxx,vels)
   ! real(prec),dimension(1:nkmod,1:inel) :: dcs!< current time step
   real(prec),dimension(1:nkmod,1:inel) :: dcos_v!< current time step
   real(prec),dimension(1:nkmod,1:inel) :: dsin_v!< current time step
-  real(prec),dimension(1:nkmod*inel) :: dcs!< current time step
+  real(prec),dimension(1:nkmod,1:inel) :: dcs1 !< current time step
   ! real(prec),dimension(1:nmodes*ntimes*inel) :: dcos_v!< current time step
   ! real(prec),dimension(1:nmodes*ntimes*inel) :: dsin_v!< current time step
   real(prec) :: summ, dtmp
@@ -196,10 +196,7 @@ subroutine set_vels_at_space_time2(dtim_in,inel,dxx,vels)
   ! dcs(1:nkmod,1:inel) = 0.0d0
 
   do i = 1, nel
-    ! dcs(1:nkall,i) = c_m(1:nkall)
-    write(*,*)i, nel
-    ! dcs(:,i) = c_m(:)
-    dcs((i-1)*nkall+1:nkall*i) = c_m(1:nkall)
+    dcs1(1:nkall,i) = c_m(1:nkall)
   enddo
   ! 2 - COS predicted vars
   ! cs_m(1:nkall) = c_m(1:nkall)
@@ -207,12 +204,12 @@ subroutine set_vels_at_space_time2(dtim_in,inel,dxx,vels)
   ! 3 - Calc $ K \cdot x + w t$
   ! CALL dgemm('T','N',nkall,nel,3,1.0d0,b_m,3,dxx,nel,dtim_in,cs_m,nel)
   ! CALL dgemm('N','N',nel,nkall,3,1.0d0,dxx,nel,b_m,3,dtim_in,cs_m,nel)
-  CALL dgemm('T','N',nkall,nel,3,1.0d0,b_m,3,dxx,3,dtim_in,dcs,nkall)
+  CALL dgemm('T','N',nkall,nel,3,1.0d0,b_m,3,dxx,3,dtim_in,dcs1,nkall)
   ! call gemm(b_m, dxx, cs_m ,transa='T',transb='N')
   ! write(*,'(a,8es13.5)')"A2: ", dcs(1:8,1)
   ! write(*,'(a,8es13.5)')"A2: ", cs_m(1:8)
   ! 4 - calc sin and cos
-  CALL vdsincos(nkall*nel,dcs(1),dsin_v(1,1),dcos_v(1,1))
+  CALL vdsincos(nkall*nel,dcs1(1,1),dsin_v(1,1),dcos_v(1,1))
   ! do i = 1, inel
   !   j = nkall * (i-1)
   !   CALL vdsincos(nkall,dcs(j),dsin_v(j),dcos_v(j))
